@@ -1,0 +1,8 @@
+app:
+  name: fhir-bomber
+  log-level: info
+  http:
+    auth:
+      user:
+      password:
+    port: 8080
