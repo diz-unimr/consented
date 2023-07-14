@@ -42,7 +42,7 @@ func (c *GicsHttpClient) GetConsentStatus(signerId, domain string, date *string)
 	// get profile
 	p, exists := c.ConsentProfiles[domain]
 	if !exists {
-		err := errors.New(fmt.Sprintf("Domain %s not supported", domain))
+		err := fmt.Errorf("domain %s not supported", domain)
 		log.Error().Str("domain", domain).Msg("Domain not supported")
 		return nil, err, http.StatusNotFound
 	}
