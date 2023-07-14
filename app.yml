@@ -1,8 +1,15 @@
 app:
-  name: fhir-bomber
+  name: consented
   log-level: info
   http:
     auth:
       user:
       password:
     port: 8080
+gics:
+  signer-id: "Patienten-ID"
+  fhir:
+    base:
+    auth:
+      user:
+      password:

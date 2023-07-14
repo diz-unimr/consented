@@ -9,7 +9,8 @@ import (
 )
 
 type AppConfig struct {
-	App App `mapstructure:"app"`
+	App  App  `mapstructure:"app"`
+	Gics Gics `mapstructure:"gics"`
 }
 
 type Http struct {
@@ -25,6 +26,16 @@ type App struct {
 type Auth struct {
 	User     string `mapstructure:"user"`
 	Password string `mapstructure:"password"`
+}
+
+type Gics struct {
+	SignerId string `mapstructure:"signer-id"`
+	Fhir     Fhir   `mapstructure:"fhir"`
+}
+
+type Fhir struct {
+	Base string `mapstructure:"base"`
+	Auth *Auth  `mapstructure:"auth"`
 }
 
 func LoadConfig() AppConfig {

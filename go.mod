@@ -5,6 +5,7 @@ go 1.19
 require (
 	github.com/gin-gonic/gin v1.9.1
 	github.com/rs/zerolog v1.29.1
+	github.com/samply/golang-fhir-models/fhir-models v0.3.2
 	github.com/spf13/viper v1.16.0
 )
 
