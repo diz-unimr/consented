@@ -15,6 +15,6 @@ COPY --from=build /app/consented .
 COPY --from=build /app/app.yml .
 ENV GIN_MODE=release
 
-EXPOSE 8081
+EXPOSE 8080
 
 ENTRYPOINT ["/app/consented"]
