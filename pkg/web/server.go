@@ -11,7 +11,7 @@ import (
 
 type Server struct {
 	config     config.AppConfig
-	gicsClient *consent.GicsHttpClient
+	gicsClient consent.GicsClient
 }
 
 func NewServer(config config.AppConfig) *Server {

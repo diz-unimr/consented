@@ -14,6 +14,10 @@ import (
 
 const DateLayout = "2006-01-02"
 
+type GicsClient interface {
+	GetConsentStatus(signerId, domain string, date *string) (*fhir.Parameters, error, int)
+}
+
 type GicsHttpClient struct {
 	Auth            *config.Auth
 	RequestUrl      string
