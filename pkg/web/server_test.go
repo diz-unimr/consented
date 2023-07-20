@@ -26,8 +26,9 @@ var testAuth = config.Auth{
 func TestHandleConsentStatus(t *testing.T) {
 
 	cases := []TestCase{
-		{"handlerMissingPid", "/consent/status", testAuth, 404, "404 page not found"},
-		{"handlerMissingDomain", "/consent/status/42", testAuth, 404, "404 page not found"},
+		{"handlerMissingPid", "/consent/status", testAuth, 404, "{\"error\":\"404 page not found\"}"},
+		{"handlerMissingDomain", "/consent/status/42", testAuth, 404, "{\"error\":\"404 page not found\"}"},
+		{"handlerEmptyParameters", "/consent/status//MII", testAuth, 400, "{\"error\":\"validation failed on field 'PatientId', condition: required\"}"},
 		{"handlerUnauthorized", "/consent/status/42/MII", config.Auth{
 			User:     "wrong",
 			Password: "auth",
