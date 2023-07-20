@@ -50,5 +50,48 @@ input data.
 >  "domain": "MII"
 >}
 >```
-
 </details>
+
+## Configuration properties
+
+| Name                      | Default         | Description                             |
+|---------------------------|-----------------|-----------------------------------------|
+| `app.name`                | consent-to-fhir | Application name                        |
+| `app.log-level`           | info            | Log level (error,warn,info,debug,trace) |
+| `app.http.auth.user`      |                 | HTTP endpoint Basic Auth user           |
+| `app.http.auth.password`  |                 | HTTP endpoint Basic Auth password       |
+| `app.http.port`           | 8080            | HTTP endpoint port                      |
+| `gics.signer-id`          | Patienten-ID    | Target consent signerId                 |
+| `gics.fhir.base`          |                 | TTP-FHIR base url                       |
+| `gics.fhir.auth.user`     |                 | TTP-FHIR Basic auth user                |
+| `gics.fhir.auth.password` |                 | TTP-FHIR Basic auth password            |
+
+
+### Environment variables
+
+Override configuration properties by providing environment variables with their respective names.
+Upper case env variables are supported as well as underscores (`_`) instead of `.` and `-`.
+
+
+# Deployment
+
+Example via `docker compose`:
+```yml
+consent-to-fhir:
+    image: ghcr.io/diz-unimr/consented:latest
+    restart: unless-stopped
+    environment:
+      APP_NAME: consented
+      APP_LOG_LEVEL: info
+      APP_HTTP_AUTH_USER: test
+      APP_HTTP_AUTH_PASSWORD: test
+      APP_HTTP_PORT: 8080
+      GICS_SIGNER_ID: Patienten-ID
+      GICS_FHIR_BASE: https://gics.local/ttp-fhir/fhir/gics/
+      GICS_FHIR_AUTH_USER: test
+      GICS_FHIR_AUTH_PASSWORD: test
+```
+
+# License
+
+[AGPL-3.0](https://www.gnu.org/licenses/agpl-3.0.en.html)
