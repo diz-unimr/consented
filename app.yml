@@ -7,7 +7,7 @@ app:
       password:
     port: 8080
 gics:
-  signer-id: "Patienten-ID"
+  update-interval: 30m
   fhir:
     base:
     auth:

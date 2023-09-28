@@ -2,6 +2,7 @@ package web
 
 import (
 	"consented/pkg/config"
+	"consented/pkg/consent"
 	"github.com/samply/golang-fhir-models/fhir-models/fhir"
 	"github.com/stretchr/testify/assert"
 	"io"
@@ -72,7 +73,7 @@ func handler(t *testing.T, data TestCase) {
 
 type TestGicsClient struct{}
 
-func (c *TestGicsClient) GetConsentStatus(_, _ string, _ *string) (*fhir.Parameters, error, int) {
+func (c *TestGicsClient) GetConsentStatus(_ string, _ consent.Domain, _ *string) (*fhir.Parameters, error, int) {
 	isConsented := true
 	return &fhir.Parameters{
 		Parameter: []fhir.ParametersParameter{{
@@ -80,4 +81,8 @@ func (c *TestGicsClient) GetConsentStatus(_, _ string, _ *string) (*fhir.Paramet
 			ValueBoolean: &isConsented,
 		}},
 	}, nil, http.StatusOK
+}
+
+func (c *TestGicsClient) GetDomains() ([]*fhir.ResearchStudy, error) {
+	return []*fhir.ResearchStudy{}, nil
 }

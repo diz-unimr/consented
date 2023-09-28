@@ -29,8 +29,8 @@ type Auth struct {
 }
 
 type Gics struct {
-	SignerId string `mapstructure:"signer-id"`
-	Fhir     Fhir   `mapstructure:"fhir"`
+	UpdateInterval string `mapstructure:"update-interval"`
+	Fhir           Fhir   `mapstructure:"fhir"`
 }
 
 type Fhir struct {
