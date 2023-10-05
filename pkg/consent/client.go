@@ -40,7 +40,6 @@ func (c *GicsHttpClient) GetDomains() ([]*fhir.ResearchStudy, error) {
 
 	// error handling
 	if err != nil {
-		log.Error().Err(err).Msg("Failed to get domains from gICS")
 		return nil, err
 	}
 

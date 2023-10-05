@@ -47,7 +47,7 @@ func LoadConfig() AppConfig {
 
 	// log level
 	logLevel, err := zerolog.ParseLevel(c.App.LogLevel)
-	if err != nil {
+	if err == nil {
 		zerolog.SetGlobalLevel(logLevel)
 	} else {
 		zerolog.SetGlobalLevel(zerolog.InfoLevel)

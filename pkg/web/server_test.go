@@ -52,7 +52,7 @@ func handler(t *testing.T, data TestCase) {
 				Auth: testAuth,
 			},
 		},
-		Gics: config.Gics{SignerId: "test"},
+		Gics: config.Gics{},
 	}
 
 	s := NewServer(c)
@@ -85,4 +85,8 @@ func (c *TestGicsClient) GetConsentStatus(_ string, _ consent.Domain, _ *string)
 
 func (c *TestGicsClient) GetDomains() ([]*fhir.ResearchStudy, error) {
 	return []*fhir.ResearchStudy{}, nil
+}
+
+func (c *TestGicsClient) GetConsentPolicies(_ string, _ consent.Domain) (*fhir.Bundle, error, int) {
+	return &fhir.Bundle{}, nil, http.StatusOK
 }

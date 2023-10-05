@@ -9,8 +9,8 @@ import (
 )
 
 const (
-	SignerIdPrefix                = "https://ths-greifswald.de/fhir/gics/identifiers/"
-	ExternalPropertyElementSystem = "https://ths-greifswald.de/fhir/StructureDefinition/gics/ExternalPropertyElement"
+	ContextIdentifierElementSystem = "http://fhir.de/ConsentManagement/StructureDefinition/ContextIdentifier"
+	ExternalPropertyElementSystem  = "https://ths-greifswald.de/fhir/StructureDefinition/gics/ExternalPropertyElement"
 )
 
 type Domain struct {
@@ -74,14 +74,24 @@ func (d *DomainCache) updateCache() {
 			continue
 		}
 
+		name := *s.Identifier[0].Value
+		desc := name
+		if s.Description != nil {
+			desc = *s.Description
+		}
 		// name & description
-		domain := Domain{Name: *s.Identifier[0].Value, Description: *s.Description}
+		domain := Domain{Name: name, Description: desc}
+
+		// parse id system
+		ctxId := parseIdSystem(s.Extension)
+		if ctxId != nil {
+			domain.PersonIdSystem = *ctxId
+		} else {
+			continue
+		}
 
 		// external properties
-		props := parseExternalProperties(s.Extension)
-		if val, ok := props["fhirSafeSignerIdType"]; ok {
-			domain.PersonIdSystem = SignerIdPrefix + val
-		}
+		props := parseExternalProperty(s.Extension)
 		if val, ok := props["departments"]; ok {
 			domain.Departments = strings.Split(val, ",")
 		}
@@ -95,10 +105,25 @@ func (d *DomainCache) updateCache() {
 	}
 
 	d.Domains = result
-	log.Debug().Int("domains", len(d.Domains)).Msg("Updated domain cache")
+	log.Debug().Str("domains", fmt.Sprintf("%s", d.Domains)).Msg("Updated domain cache")
 }
 
-func parseExternalProperties(ext []fhir.Extension) map[string]string {
+func parseIdSystem(ext []fhir.Extension) *string {
+	for _, e := range ext {
+		if e.Url != ContextIdentifierElementSystem {
+			continue
+		}
+
+		for _, ee := range e.Extension {
+			if ee.Url == "system" {
+				return ee.ValueUri
+			}
+		}
+	}
+	return nil
+}
+
+func parseExternalProperty(ext []fhir.Extension) map[string]string {
 	props := make(map[string]string)
 	for _, e := range ext {
 		if k, v := parseProperty(e); k != nil && v != nil {
