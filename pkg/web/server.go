@@ -36,7 +36,7 @@ func NewServer(config config.AppConfig) *Server {
 	}
 }
 
-func (s *Server) Run() {
+func (s *Server) Run() error {
 	s.Init()
 	r := s.setupRouter()
 
@@ -45,7 +45,7 @@ func (s *Server) Run() {
 		log.Info().Str("path", v.Path).Str("method", v.Method).Msg("Route configured")
 	}
 
-	log.Fatal().Err(r.Run(":" + s.config.App.Http.Port)).Msg("Server failed to run")
+	return r.Run(":" + s.config.App.Http.Port)
 }
 
 func (s *Server) setupRouter() *gin.Engine {

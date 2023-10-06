@@ -159,6 +159,20 @@ func TestFilterDomains(t *testing.T) {
 	assert.Equal(t, []consent.Domain{test}, filtered)
 }
 
+func TestServerRun(t *testing.T) {
+	c := config.AppConfig{
+		App:  config.App{Http: config.Http{Port: "-1", Auth: testAuth}},
+		Gics: config.Gics{UpdateInterval: "1h"},
+	}
+
+	s := NewServer(c)
+	s.gicsClient = &TestGicsClient{}
+	err := s.Run()
+
+	expected := "listen tcp: address -1: invalid port"
+	assert.EqualErrorf(t, err, expected, "Error should be: %v, got: %v", expected, err)
+}
+
 type TestGicsClient struct{}
 
 func (c *TestGicsClient) GetDomains() ([]*fhir.ResearchStudy, error) {
