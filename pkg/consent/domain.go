@@ -40,7 +40,7 @@ func (d *DomainCache) Initialize() chan bool {
 
 	// initial call
 	d.updateCache()
-	log.Info().Int("domains", len(d.Domains)).Str("update-interval", fmt.Sprintf("%s", d.UpdateInterval)).Msg("Successfully initialized domains. Updating periodically.")
+	log.Info().Int("domains", len(d.Domains)).Str("update-interval", d.UpdateInterval.String()).Msg("Successfully initialized domains. Updating periodically.")
 
 	// init polling
 	ticker := time.NewTicker(d.UpdateInterval)
