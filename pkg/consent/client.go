@@ -10,8 +10,6 @@ import (
 	"net/http"
 )
 
-const DateLayout = "2006-01-02"
-
 type GicsClient interface {
 	GetDomains() ([]*fhir.ResearchStudy, error)
 	GetConsentPolicies(signerId string, domain Domain) (*fhir.Bundle, error, int)

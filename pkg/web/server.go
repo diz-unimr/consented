@@ -4,9 +4,7 @@ import (
 	"consented/pkg/config"
 	"consented/pkg/consent"
 	"errors"
-	"fmt"
 	"github.com/gin-gonic/gin"
-	"github.com/go-playground/validator/v10"
 	"github.com/rs/zerolog/log"
 	"github.com/samply/golang-fhir-models/fhir-models/fhir"
 	"net/http"
@@ -92,11 +90,9 @@ func (s *Server) handleConsentStatus(c *gin.Context) {
 
 	// bind to struct
 	var r StatusRequest
-	if err := c.ShouldBindUri(&r); err != nil {
-		log.Error().Err(err).Msg("Failed to parse path parameters")
-		handleValidationError(c, err)
-		return
-	}
+	// path parameter is matched by route
+	_ = c.ShouldBindUri(&r)
+	// body is optional
 	_ = c.ShouldBindJSON(&r)
 
 	var response []DomainStatus
@@ -157,15 +153,6 @@ func (s *Server) createDomainStatus(r StatusRequest, d consent.Domain) (*DomainS
 	}
 
 	return ds, nil, http.StatusOK
-}
-
-func handleValidationError(c *gin.Context, err error) {
-	for _, fieldErr := range err.(validator.ValidationErrors) {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": fmt.Sprintf("validation failed on field '%s', condition: %s", fieldErr.Field(), fieldErr.ActualTag()),
-		})
-		return
-	}
 }
 
 func (s *Server) parseConsent(b *fhir.Bundle, domain consent.Domain) (*DomainStatus, error) {

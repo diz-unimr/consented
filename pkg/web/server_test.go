@@ -14,13 +14,19 @@ import (
 	"time"
 )
 
-type TestCase struct {
+type HandlerTestCase struct {
 	name           string
 	requestUrl     string
 	Auth           config.Auth
 	body           string
 	responseStatus int
 	response       string
+}
+
+type FilterDomainTestCase struct {
+	name   string
+	filter []string
+	result []consent.Domain
 }
 
 var testAuth = config.Auth{
@@ -30,13 +36,14 @@ var testAuth = config.Auth{
 
 func TestHandleConsentStatus(t *testing.T) {
 
-	cases := []TestCase{
+	cases := []HandlerTestCase{
 		{
 			name:           "handlerMissingPid",
 			requestUrl:     "/consent/status",
 			Auth:           testAuth,
 			responseStatus: 404,
-			response:       `{"error":"404 page not found"}`},
+			response:       `{"error":"404 page not found"}`,
+		},
 		{
 			name:       "handlerUnauthorized",
 			requestUrl: "/consent/status/42",
@@ -62,7 +69,7 @@ func TestHandleConsentStatus(t *testing.T) {
 	}
 }
 
-func handler(t *testing.T, data TestCase) {
+func handler(t *testing.T, data HandlerTestCase) {
 	// setup config
 	c := config.AppConfig{
 		App: config.App{
@@ -106,6 +113,50 @@ func handler(t *testing.T, data TestCase) {
 	// assert body
 	ja := jsonassert.New(t)
 	ja.Assertf(response, data.response)
+}
+
+func TestFilterDomains(t *testing.T) {
+	test := consent.Domain{
+		Name:            "Test",
+		Description:     "Test Domain",
+		CheckPolicyCode: "IDAT_Test",
+		PersonIdSystem:  "https://ths-greifswald.de/fhir/gics/identifiers/TestID",
+	}
+
+	dep := consent.Domain{
+		Name:            "Dep",
+		Description:     "Department specific Domain",
+		CheckPolicyCode: "IDAT_Test",
+		PersonIdSystem:  "https://ths-greifswald.de/fhir/gics/identifiers/TestID",
+		Departments:     []string{"dep"},
+	}
+
+	s := &Server{}
+	s.domainCache = consent.NewDomainCache(nil, -1)
+	s.domainCache.Domains = []consent.Domain{test, dep}
+
+	for _, c := range []FilterDomainTestCase{
+		{
+			name:   "filterDomainsAll",
+			filter: []string{"dep"},
+			result: s.domainCache.Domains,
+		},
+		{
+			name:   "filterDomainsNoDep",
+			result: []consent.Domain{test},
+		}} {
+
+		t.Run(c.name, func(t *testing.T) {
+
+			// act
+			filtered := s.filterDomains(c.filter)
+			assert.Equal(t, c.result, filtered)
+		})
+	}
+
+	filtered := s.filterDomains([]string{})
+
+	assert.Equal(t, []consent.Domain{test}, filtered)
 }
 
 type TestGicsClient struct{}
