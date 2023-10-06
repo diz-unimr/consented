@@ -150,7 +150,3 @@ func parseProperty(e fhir.Extension) (*string, *string) {
 
 	return key, value
 }
-
-func Of[E any](e E) *E {
-	return &e
-}

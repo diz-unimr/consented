@@ -8,13 +8,11 @@ import (
 	"github.com/samply/golang-fhir-models/fhir-models/fhir"
 	"io"
 	"net/http"
-	"time"
 )
 
 const DateLayout = "2006-01-02"
 
 type GicsClient interface {
-	GetConsentStatus(signerId string, domain Domain, date *string) (*fhir.Parameters, error, int)
 	GetDomains() ([]*fhir.ResearchStudy, error)
 	GetConsentPolicies(signerId string, domain Domain) (*fhir.Bundle, error, int)
 }
@@ -124,88 +122,6 @@ func (c *GicsHttpClient) GetConsentPolicies(signerId string, domain Domain) (*fh
 	return &res, nil, http.StatusOK
 }
 
-func (c *GicsHttpClient) GetConsentStatus(signerId string, domain Domain, date *string) (*fhir.Parameters, error, int) {
-	// parse date
-	consentDate, err := parseDate(date)
-	if err != nil {
-		return nil, err, http.StatusBadRequest
-	}
-
-	// default config
-	//ignoreVersionNumber := false
-	ignoreVersionNumber := true
-	unknownStateIsConsideredAsDecline := true
-	configParam, err := fhir.Parameters{
-		Parameter: []fhir.ParametersParameter{
-			{
-				Name:         "ignoreVersionNumber",
-				ValueBoolean: &ignoreVersionNumber,
-			},
-			{
-				Name:         "unknownStateIsConsideredAsDecline",
-				ValueBoolean: &unknownStateIsConsideredAsDecline,
-			},
-			{
-				Name:      "requestDate",
-				ValueDate: &consentDate,
-			},
-		},
-	}.MarshalJSON()
-	if err != nil {
-		log.Error().Err(err).Msg("Unable to serialize config parameter")
-		return nil, err, http.StatusBadRequest
-	}
-
-	fhirRequest := fhir.Parameters{
-		Id:   nil,
-		Meta: nil,
-		Parameter: []fhir.ParametersParameter{
-			{
-				Name:            "personIdentifier",
-				ValueIdentifier: &fhir.Identifier{System: &domain.PersonIdSystem, Value: &signerId},
-			},
-			{
-				Name:        "domain",
-				ValueString: &domain.Name,
-			},
-			{
-				Name: "policy",
-				// TODO missing system
-				ValueCoding: &fhir.Coding{Code: &domain.CheckPolicyCode},
-			},
-			{
-				Name:        "version",
-				ValueString: Of("#"),
-				//ValueString: domain.PolicyVersion,
-			},
-			{
-				Name:     "config",
-				Resource: configParam,
-			},
-		},
-	}
-	r, err := fhirRequest.MarshalJSON()
-	if err != nil {
-		return nil, err, http.StatusInternalServerError
-	}
-
-	// post request to gICS
-	data, err := parseResponse(c.postRequest(c.BaseUrl+"/$isConsented", r))
-
-	if err != nil {
-		log.Error().Err(err).Msg("POST request to gICS failed for: " + c.BaseUrl + "/$isConsented")
-		return nil, err, http.StatusBadGateway
-	}
-
-	res, err := fhir.UnmarshalParameters(data)
-	if err != nil {
-		log.Fatal().Err(err).Msg("Failed to deserialize FHIR response from  gICS. Expected 'Parameters' resource")
-		return nil, err, http.StatusBadGateway
-	}
-
-	return &res, nil, http.StatusOK
-}
-
 func (c *GicsHttpClient) postRequest(requestUrl string, body []byte) (*http.Response, error) {
 	req, err := http.NewRequest(http.MethodPost, requestUrl,
 		bytes.NewBuffer(body))
@@ -243,17 +159,5 @@ func closeBody(body io.ReadCloser) {
 	err := body.Close()
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to close response body")
-	}
-}
-
-func parseDate(date *string) (string, error) {
-	if date == nil {
-		return time.Now().Format(DateLayout), nil
-	} else {
-		_, err := time.Parse(DateLayout, *date)
-		if err == nil {
-			return *date, nil
-		}
-		return "", err
 	}
 }
