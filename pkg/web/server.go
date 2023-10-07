@@ -74,7 +74,7 @@ type DomainStatus struct {
 	Domain      string     `json:"domain"`
 	Description string     `json:"description"`
 	Status      string     `json:"status"`
-	LastUpdated time.Time  `json:"last-updated"`
+	LastUpdated *time.Time `json:"last-updated"`
 	Expires     *time.Time `json:"expires"`
 	AskConsent  bool       `json:"ask-consent"`
 	Policies    []Policy   `json:"policies"`
@@ -161,6 +161,9 @@ func (s *Server) parseConsent(b *fhir.Bundle, domain consent.Domain) (*DomainSta
 	ds := DomainStatus{
 		Domain:      domain.Name,
 		Description: domain.Description,
+		LastUpdated: nil,
+		AskConsent:  true,
+		Status:      consent.Status(consent.NotAsked).String(),
 		Policies:    make([]Policy, 0),
 	}
 
@@ -170,8 +173,8 @@ func (s *Server) parseConsent(b *fhir.Bundle, domain consent.Domain) (*DomainSta
 
 		// last updated
 		updated := parseTime(r.Meta.LastUpdated)
-		if updated.After(ds.LastUpdated) {
-			ds.LastUpdated = updated
+		if ds.LastUpdated == nil || updated.After(*ds.LastUpdated) {
+			ds.LastUpdated = &updated
 		}
 
 		// policy
