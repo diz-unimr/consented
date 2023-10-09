@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/rs/zerolog/log"
 	"github.com/samply/golang-fhir-models/fhir-models/fhir"
+	"strings"
 	"time"
 )
 
@@ -89,8 +90,8 @@ func parsePolicy(p *fhir.ConsentProvision) (*Policy, error) {
 		// take first
 		co := p.Code[0].Coding[0]
 		var name string
-		if co.Display != nil {
-			name = *co.Display
+		if co.Display != nil && strings.TrimSpace(*co.Display) != "" {
+			name = strings.TrimSpace(*co.Display)
 		} else {
 			name = *co.Code
 		}

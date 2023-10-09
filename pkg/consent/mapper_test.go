@@ -83,6 +83,69 @@ func TestParseConsent(t *testing.T) {
 	assert.Equal(t, expected, *res)
 }
 
+type ParsePolicyTestCase struct {
+	name     string
+	code     string
+	display  string
+	permit   bool
+	expected Policy
+}
+
+func TestParsePolicy(t *testing.T) {
+
+	cases := []ParsePolicyTestCase{
+		{name: "TestParsePolicyWithDisplay",
+			code:    "code",
+			display: "display",
+			permit:  true,
+			expected: Policy{
+				Name:   "display",
+				Permit: true,
+				Code:   "code",
+			},
+		},
+
+		{name: "TestParsePolicyWithCode",
+			code:   "code",
+			permit: false,
+			expected: Policy{
+				Name:   "code",
+				Permit: false,
+				Code:   "code",
+			},
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+
+			now := time.Now()
+			ct := fhir.ConsentProvisionTypeDeny
+			if c.permit {
+				ct = fhir.ConsentProvisionTypePermit
+			}
+			p := fhir.ConsentProvision{
+				Type: &ct,
+				Period: &fhir.Period{
+					Start: of(now.Format(time.RFC3339)),
+					End:   of(now.AddDate(5, 0, 0).Format(time.RFC3339)),
+				},
+				Code: []fhir.CodeableConcept{{
+					Coding: []fhir.Coding{{
+						Code:    &c.code,
+						Display: &c.display,
+					}},
+				}},
+			}
+
+			actual, err := parsePolicy(&p)
+
+			assert.Nil(t, err)
+			assert.Equal(t, c.expected, *actual)
+		})
+	}
+}
+
 func of[E any](e E) *E {
 	return &e
 }
