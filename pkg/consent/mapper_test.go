@@ -9,7 +9,7 @@ import (
 
 func TestParseConsent(t *testing.T) {
 	// prepare dates
-	now := time.Now()
+	now := time.Now().UTC()
 	now = time.Date(now.Year(), now.Month(), now.Day(), now.Hour(),
 		now.Minute(), now.Second(), 0, now.Location())
 	// policy consent resources
