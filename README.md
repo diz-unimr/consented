@@ -10,7 +10,7 @@ operation of the gICS TTP FHIR Gateway API to query policies and provide detaile
 ## Background
 
 This service is intended to provide all information needed to decide if a patient should be asked for a consent at the time. 
-Detailed policy status information is available, too, and can be provided as feedback to the patient.
+Detailed policy status information is available, too, and can be used to give feedback to the patient.
 
 ## Domain configuration (gICS)
 
@@ -97,6 +97,8 @@ _See `Policy` response below._
 | expires      | date of expiry                   | `string` (ISO 8601 date)                                   |
 | ask-consent  | patient can be asked for consent | `boolean`                                                  |
 | policies     | domain name                      | Array of `Policy`                                          |
+
+⚠️ **NOTE**: `ask-consent` evaluates to `true` if an existing valid consent exists, and it expires in less than a year.
 
 `Policy`
 

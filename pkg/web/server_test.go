@@ -180,18 +180,18 @@ func (c *TestGicsClient) GetDomains() ([]*fhir.ResearchStudy, error) {
 }
 
 func (c *TestGicsClient) GetConsentPolicies(_ string, domain consent.Domain) (*fhir.Bundle, error, int) {
-	startTime := Of(time.Now().Format(time.RFC3339))
+	startTime := of(time.Now().Format(time.RFC3339))
 	r := fhir.Consent{
 		Meta: &fhir.Meta{LastUpdated: startTime},
 		Provision: &fhir.ConsentProvision{
-			Type: Of(fhir.ConsentProvisionTypePermit),
+			Type: of(fhir.ConsentProvisionTypePermit),
 			Period: &fhir.Period{
 				Start: startTime,
-				End:   Of(time.Now().AddDate(5, 0, 0).Format(time.RFC3339)),
+				End:   of(time.Now().AddDate(5, 0, 0).Format(time.RFC3339)),
 			},
 			Code: []fhir.CodeableConcept{{
 				Coding: []fhir.Coding{{
-					System: Of("https://ths-greifswald.de/fhir/CodeSystem/gics/Policy/" + domain.Name),
+					System: of("https://ths-greifswald.de/fhir/CodeSystem/gics/Policy/" + domain.Name),
 					Code:   &domain.CheckPolicyCode,
 				}},
 			}},
@@ -207,6 +207,6 @@ func (c *TestGicsClient) GetConsentPolicies(_ string, domain consent.Domain) (*f
 	}, nil, http.StatusOK
 }
 
-func Of[E any](e E) *E {
+func of[E any](e E) *E {
 	return &e
 }
