@@ -40,7 +40,10 @@ func TestGetConsentPolicies(t *testing.T) {
 	defer s.Close()
 
 	c := NewGicsClient(config.AppConfig{Gics: config.Gics{
-		UpdateInterval: "1h", Fhir: config.Fhir{Base: s.URL},
+		UpdateInterval: "1h", Fhir: config.Fhir{Base: s.URL, Auth: &config.Auth{
+			User:     "test",
+			Password: "test",
+		}},
 	}})
 
 	// act
