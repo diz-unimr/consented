@@ -29,8 +29,8 @@ type Auth struct {
 }
 
 type Gics struct {
-	SignerId string `mapstructure:"signer-id"`
-	Fhir     Fhir   `mapstructure:"fhir"`
+	UpdateInterval string `mapstructure:"update-interval"`
+	Fhir           Fhir   `mapstructure:"fhir"`
 }
 
 type Fhir struct {
@@ -47,7 +47,7 @@ func LoadConfig() AppConfig {
 
 	// log level
 	logLevel, err := zerolog.ParseLevel(c.App.LogLevel)
-	if err != nil {
+	if err == nil {
 		zerolog.SetGlobalLevel(logLevel)
 	} else {
 		zerolog.SetGlobalLevel(zerolog.InfoLevel)

@@ -10,6 +10,9 @@ RUN GOOS=linux GOARCH=amd64 go build -v
 
 FROM alpine:3.18 as run
 
+RUN apk add --no-cache tzdata
+ENV TZ=Europe/Berlin
+
 WORKDIR /app/
 COPY --from=build /app/consented .
 COPY --from=build /app/app.yml .

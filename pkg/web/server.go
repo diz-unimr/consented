@@ -3,27 +3,37 @@ package web
 import (
 	"consented/pkg/config"
 	"consented/pkg/consent"
-	"fmt"
 	"github.com/gin-gonic/gin"
-	"github.com/go-playground/validator/v10"
 	"github.com/rs/zerolog/log"
-	"github.com/samply/golang-fhir-models/fhir-models/fhir"
 	"net/http"
+	"os"
+	"slices"
+	"time"
 )
 
 type Server struct {
-	config     config.AppConfig
-	gicsClient consent.GicsClient
+	config      config.AppConfig
+	gicsClient  consent.GicsClient
+	domainCache *consent.DomainCache
 }
 
 func NewServer(config config.AppConfig) *Server {
+	c := consent.NewGicsClient(config)
+	interval, err := time.ParseDuration(config.Gics.UpdateInterval)
+	if err != nil {
+		log.Fatal().Err(err).Msg("Could not parse 'gics.update-interval' from app config")
+		os.Exit(1)
+	}
+
 	return &Server{
-		config:     config,
-		gicsClient: consent.NewGicsClient(config),
+		config:      config,
+		gicsClient:  c,
+		domainCache: consent.NewDomainCache(c, interval),
 	}
 }
 
-func (s Server) Run() {
+func (s *Server) Run() error {
+	s.Init()
 	r := s.setupRouter()
 
 	log.Info().Str("port", s.config.App.Http.Port).Msg("Starting server")
@@ -31,15 +41,15 @@ func (s Server) Run() {
 		log.Info().Str("path", v.Path).Str("method", v.Method).Msg("Route configured")
 	}
 
-	log.Fatal().Err(r.Run(":" + s.config.App.Http.Port)).Msg("Server failed to run")
+	return r.Run(":" + s.config.App.Http.Port)
 }
 
-func (s Server) setupRouter() *gin.Engine {
+func (s *Server) setupRouter() *gin.Engine {
 	r := gin.New()
 	_ = r.SetTrustedProxies(nil)
 	r.Use(config.DefaultStructuredLogger(), gin.Recovery())
 
-	r.GET("/consent/status/:pid/:domain", gin.BasicAuth(gin.Accounts{
+	r.POST("/consent/status/:pid", gin.BasicAuth(gin.Accounts{
 		s.config.App.Http.Auth.User: s.config.App.Http.Auth.Password,
 	}), s.handleConsentStatus)
 	r.NoRoute(gin.BasicAuth(gin.Accounts{
@@ -52,59 +62,75 @@ func (s Server) setupRouter() *gin.Engine {
 }
 
 type StatusRequest struct {
-	PatientId string  `uri:"pid" binding:"required"`
-	Domain    string  `uri:"domain" binding:"required"`
-	Date      *string `form:"date"`
+	PatientId   string   `uri:"pid" binding:"required"`
+	Departments []string `json:"departments"`
 }
 
-func (s Server) handleConsentStatus(c *gin.Context) {
+func (s *Server) handleConsentStatus(c *gin.Context) {
 
 	// bind to struct
 	var r StatusRequest
-	if err := c.ShouldBindUri(&r); err != nil {
-		log.Error().Err(err).Msg("Failed to parse path parameters")
-		handleValidationError(c, err)
-		return
-	}
-	_ = c.ShouldBindQuery(&r)
+	// path parameter is matched by route
+	_ = c.ShouldBindUri(&r)
+	// body is optional
+	_ = c.ShouldBindJSON(&r)
 
-	resp, err, code := s.gicsClient.GetConsentStatus(r.PatientId, r.Domain, r.Date)
+	var response []consent.DomainStatus
+	// filter domains by department
+	for _, d := range s.filterDomains(r.Departments) {
+
+		// get status per domain
+		ds, err, code := s.createDomainStatus(r, d)
+		if err != nil {
+			c.JSON(code, gin.H{
+				"error": err.Error(),
+			})
+			return
+		}
+
+		response = append(response, *ds)
+	}
+
+	c.JSON(http.StatusOK, response)
+}
+
+func (s *Server) Init() {
+	s.domainCache.Initialize()
+}
+
+func (s *Server) filterDomains(deps []string) []consent.Domain {
+	var domains []consent.Domain
+	for _, d := range s.domainCache.Domains {
+		// no restrictions
+		if len(d.Departments) > 0 {
+			for _, required := range d.Departments {
+				if slices.Contains(deps, required) {
+					domains = append(domains, d)
+					break
+				}
+			}
+			continue
+		}
+		domains = append(domains, d)
+	}
+
+	return domains
+}
+
+func (s *Server) createDomainStatus(r StatusRequest, d consent.Domain) (*consent.DomainStatus, error, int) {
+	// get current policies
+	resp, err, code := s.gicsClient.GetConsentPolicies(r.PatientId, d)
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to get consent status from gICS")
-		c.JSON(code, gin.H{
-			"error": err.Error(),
-		})
-		return
+		return nil, err, code
 	}
 
-	v := getConsented(resp)
-	if v == nil {
-		c.JSON(http.StatusBadGateway, gin.H{
-			"error": "Received unexpected response from gICS",
-		})
-		return
+	// parse resources
+	ds, err := consent.ParseConsent(resp, d)
+	if err != nil {
+		log.Error().Err(err).Msg("Unable to parse consent policies from gICS")
+		return nil, err, http.StatusInternalServerError
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"domain":    r.Domain,
-		"consented": *v,
-	})
-}
-
-func handleValidationError(c *gin.Context, err error) {
-	for _, fieldErr := range err.(validator.ValidationErrors) {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": fmt.Sprintf("validation failed on field '%s', condition: %s", fieldErr.Field(), fieldErr.ActualTag()),
-		})
-		return
-	}
-}
-
-func getConsented(p *fhir.Parameters) *bool {
-	for _, v := range p.Parameter {
-		if v.Name == "consented" {
-			return v.ValueBoolean
-		}
-	}
-	return nil
+	return ds, nil, http.StatusOK
 }

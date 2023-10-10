@@ -4,30 +4,25 @@ import (
 	"bytes"
 	"consented/pkg/config"
 	"errors"
-	"fmt"
 	"github.com/rs/zerolog/log"
 	"github.com/samply/golang-fhir-models/fhir-models/fhir"
 	"io"
 	"net/http"
-	"time"
 )
 
-const DateLayout = "2006-01-02"
-
 type GicsClient interface {
-	GetConsentStatus(signerId, domain string, date *string) (*fhir.Parameters, error, int)
+	GetDomains() ([]fhir.ResearchStudy, error)
+	GetConsentPolicies(signerId string, domain Domain) (*fhir.Bundle, error, int)
 }
 
 type GicsHttpClient struct {
-	Auth            *config.Auth
-	RequestUrl      string
-	ConsentProfiles map[string]*Profile
+	Auth    *config.Auth
+	BaseUrl string
 }
 
 func NewGicsClient(config config.AppConfig) *GicsHttpClient {
 	client := &GicsHttpClient{
-		RequestUrl:      config.Gics.Fhir.Base + "/$isConsented",
-		ConsentProfiles: GetSupportedProfiles(config.Gics.SignerId),
+		BaseUrl: config.Gics.Fhir.Base,
 	}
 	if config.Gics.Fhir.Auth != nil {
 		client.Auth = config.Gics.Fhir.Auth
@@ -36,44 +31,58 @@ func NewGicsClient(config config.AppConfig) *GicsHttpClient {
 	return client
 }
 
-func (c *GicsHttpClient) GetConsentStatus(signerId, domain string, date *string) (*fhir.Parameters, error, int) {
-	// parse date
-	consentDate, err := parseDate(date)
+func (c *GicsHttpClient) GetDomains() ([]fhir.ResearchStudy, error) {
+	data, err := parseResponse(c.getRequest(c.BaseUrl + "/ResearchStudy"))
+
+	// error handling
 	if err != nil {
-		return nil, err, http.StatusBadRequest
+		return nil, err
 	}
 
-	// get profile
-	p, exists := c.ConsentProfiles[domain]
-	if !exists {
-		err := fmt.Errorf("domain %s not supported", domain)
-		log.Error().Str("domain", domain).Msg("Domain not supported")
-		return nil, err, http.StatusNotFound
+	// unmarshal
+	bundle, err := fhir.UnmarshalBundle(data)
+	if err != nil {
+		log.Fatal().Err(err).Msg("Failed to deserialize FHIR response from  gICS. Expected 'Bundle' of 'ResearchStudy' for domain request")
+		return nil, err
 	}
 
-	// default config
-	ignoreVersionNumber := false
-	unknownStateIsConsideredAsDecline := true
-	configParam, err := fhir.Parameters{
-		Parameter: []fhir.ParametersParameter{
-			{
-				Name:         "ignoreVersionNumber",
-				ValueBoolean: &ignoreVersionNumber,
-			},
-			{
-				Name:         "unknownStateIsConsideredAsDecline",
-				ValueBoolean: &unknownStateIsConsideredAsDecline,
-			},
-			{
-				Name:      "requestDate",
-				ValueDate: &consentDate,
-			},
-		},
-	}.MarshalJSON()
-	if err != nil {
-		log.Error().Err(err).Msg("Unable to serialize config parameter")
-		return nil, err, http.StatusBadRequest
+	var domains []fhir.ResearchStudy
+	for _, e := range bundle.Entry {
+		rs, err := fhir.UnmarshalResearchStudy(e.Resource)
+		if err != nil {
+			log.Error().Err(err).Msg("Failed to deserialize 'ResearchStudy' from domain request")
+			return nil, err
+		}
+
+		domains = append(domains, rs)
 	}
+
+	return domains, nil
+}
+
+func parseResponse(response *http.Response, err error) ([]byte, error) {
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer closeBody(response.Body)
+
+	responseData, err := io.ReadAll(response.Body)
+	if err != nil {
+		log.Fatal().Err(err).Msg("Unable to parse gICS response body")
+		return nil, err
+	}
+	if response.StatusCode != http.StatusOK {
+		err = errors.New(string(responseData))
+		log.Error().Err(err).Int("statusCode", response.StatusCode).Msg("Response status not OK")
+		return nil, err
+	}
+
+	return responseData, nil
+}
+
+func (c *GicsHttpClient) GetConsentPolicies(signerId string, domain Domain) (*fhir.Bundle, error, int) {
 
 	fhirRequest := fhir.Parameters{
 		Id:   nil,
@@ -81,23 +90,11 @@ func (c *GicsHttpClient) GetConsentStatus(signerId, domain string, date *string)
 		Parameter: []fhir.ParametersParameter{
 			{
 				Name:            "personIdentifier",
-				ValueIdentifier: &fhir.Identifier{System: p.PersonIdSystem, Value: &signerId},
+				ValueIdentifier: &fhir.Identifier{System: &domain.PersonIdSystem, Value: &signerId},
 			},
 			{
 				Name:        "domain",
-				ValueString: &domain,
-			},
-			{
-				Name:        "policy",
-				ValueCoding: p.PolicyCoding,
-			},
-			{
-				Name:        "version",
-				ValueString: p.PolicyVersion,
-			},
-			{
-				Name:     "config",
-				Resource: configParam,
+				ValueString: &domain.Name,
 			},
 		},
 	}
@@ -107,25 +104,14 @@ func (c *GicsHttpClient) GetConsentStatus(signerId, domain string, date *string)
 	}
 
 	// post request to gICS
-	response, err := c.postRequest(r)
+	data, err := parseResponse(c.postRequest(c.BaseUrl+"/$currentPolicyStatesForPerson", r))
 
 	if err != nil {
-		log.Error().Err(err).Msg("POST request to gICS failed for: " + c.RequestUrl)
-		return nil, err, http.StatusBadGateway
-	}
-	defer closeBody(response.Body)
-
-	responseData, err := io.ReadAll(response.Body)
-	if err != nil {
-		log.Fatal().Err(err).Msg("Unable to parse gICS get consent status response")
-	}
-	if response.StatusCode != http.StatusOK {
-		err = errors.New(string(responseData))
-		log.Error().Err(err).Int("statusCode", response.StatusCode).Msg("POST request to gICS failed")
+		log.Error().Err(err).Msg("POST request to gICS failed for: " + c.BaseUrl + "/$currentPolicyStatesForPerson")
 		return nil, err, http.StatusBadGateway
 	}
 
-	res, err := fhir.UnmarshalParameters(responseData)
+	res, err := fhir.UnmarshalBundle(data)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to deserialize FHIR response from  gICS. Expected 'Parameters' resource")
 		return nil, err, http.StatusBadGateway
@@ -134,11 +120,29 @@ func (c *GicsHttpClient) GetConsentStatus(signerId, domain string, date *string)
 	return &res, nil, http.StatusOK
 }
 
-func (c *GicsHttpClient) postRequest(body []byte) (*http.Response, error) {
-	req, err := http.NewRequest(http.MethodPost, c.RequestUrl,
+func (c *GicsHttpClient) postRequest(requestUrl string, body []byte) (*http.Response, error) {
+	req, err := http.NewRequest(http.MethodPost, requestUrl,
 		bytes.NewBuffer(body))
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to create POST request")
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/fhir+json")
+	if c.Auth != nil {
+		req.SetBasicAuth(c.Auth.User, c.Auth.Password)
+	}
+
+	return http.DefaultClient.Do(req)
+}
+
+func (c *GicsHttpClient) getRequest(requestUrl string) (*http.Response, error) {
+	return c.newRequest(http.MethodGet, requestUrl, nil)
+}
+
+func (c *GicsHttpClient) newRequest(method string, url string, body io.Reader) (*http.Response, error) {
+	req, err := http.NewRequest(method, url, body)
+	if err != nil {
+		log.Fatal().Err(err).Msg("Failed to create request")
 		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/fhir+json")
@@ -153,17 +157,5 @@ func closeBody(body io.ReadCloser) {
 	err := body.Close()
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to close response body")
-	}
-}
-
-func parseDate(date *string) (string, error) {
-	if date == nil {
-		return time.Now().Format(DateLayout), nil
-	} else {
-		_, err := time.Parse(DateLayout, *date)
-		if err == nil {
-			return *date, nil
-		}
-		return "", err
 	}
 }
