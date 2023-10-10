@@ -11,7 +11,7 @@ import (
 )
 
 type GicsClient interface {
-	GetDomains() ([]*fhir.ResearchStudy, error)
+	GetDomains() ([]fhir.ResearchStudy, error)
 	GetConsentPolicies(signerId string, domain Domain) (*fhir.Bundle, error, int)
 }
 
@@ -31,7 +31,7 @@ func NewGicsClient(config config.AppConfig) *GicsHttpClient {
 	return client
 }
 
-func (c *GicsHttpClient) GetDomains() ([]*fhir.ResearchStudy, error) {
+func (c *GicsHttpClient) GetDomains() ([]fhir.ResearchStudy, error) {
 	data, err := parseResponse(c.getRequest(c.BaseUrl + "/ResearchStudy"))
 
 	// error handling
@@ -46,7 +46,7 @@ func (c *GicsHttpClient) GetDomains() ([]*fhir.ResearchStudy, error) {
 		return nil, err
 	}
 
-	var domains []*fhir.ResearchStudy
+	var domains []fhir.ResearchStudy
 	for _, e := range bundle.Entry {
 		rs, err := fhir.UnmarshalResearchStudy(e.Resource)
 		if err != nil {
@@ -54,7 +54,7 @@ func (c *GicsHttpClient) GetDomains() ([]*fhir.ResearchStudy, error) {
 			return nil, err
 		}
 
-		domains = append(domains, &rs)
+		domains = append(domains, rs)
 	}
 
 	return domains, nil

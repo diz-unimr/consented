@@ -175,8 +175,8 @@ func TestServerRun(t *testing.T) {
 
 type TestGicsClient struct{}
 
-func (c *TestGicsClient) GetDomains() ([]*fhir.ResearchStudy, error) {
-	return []*fhir.ResearchStudy{}, nil
+func (c *TestGicsClient) GetDomains() ([]fhir.ResearchStudy, error) {
+	return []fhir.ResearchStudy{}, nil
 }
 
 func (c *TestGicsClient) GetConsentPolicies(_ string, domain consent.Domain) (*fhir.Bundle, error, int) {

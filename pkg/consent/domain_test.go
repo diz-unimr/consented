@@ -35,7 +35,7 @@ func TestUpdateCache(t *testing.T) {
 
 type TestGicsClient struct{}
 
-func (c *TestGicsClient) GetDomains() ([]*fhir.ResearchStudy, error) {
+func (c *TestGicsClient) GetDomains() ([]fhir.ResearchStudy, error) {
 	signerId := fhir.Extension{
 		Url: ContextIdentifierElementSystem,
 		Extension: []fhir.Extension{{
@@ -43,60 +43,55 @@ func (c *TestGicsClient) GetDomains() ([]*fhir.ResearchStudy, error) {
 			ValueUri: of("https://ths-greifswald.de/fhir/gics/identifiers/Patienten-ID"),
 		}}}
 
-	return []*fhir.ResearchStudy{
+	return []fhir.ResearchStudy{
 		{
-			Identifier: []fhir.Identifier{{
-				Value: of("Foo"),
-			}},
+			Identifier:  []fhir.Identifier{{Value: of("Foo")}},
 			Description: of("Foo Domain"),
 			Extension: []fhir.Extension{signerId,
 				{
 					Url: ExternalPropertyElementSystem,
 					Extension: []fhir.Extension{
-						{
-							Url:         "key",
-							ValueString: of("checkPolicy"),
-						},
-						{
-							Url:         "value",
-							ValueString: of("MDAT_erheben"),
-						},
+						{Url: "key", ValueString: of("checkPolicy")},
+						{Url: "value", ValueString: of("MDAT_erheben")},
 					},
 				},
 			},
 		},
 		{
-			Identifier: []fhir.Identifier{{
-				Value: of("Bar"),
-			}},
+			Identifier:  []fhir.Identifier{{Value: of("Bar")}},
 			Description: of("Bar Domain"),
 			Extension: []fhir.Extension{signerId,
 				{
 					Url: ExternalPropertyElementSystem,
 					Extension: []fhir.Extension{
-						{
-							Url:         "key",
-							ValueString: of("checkPolicy"),
-						},
-						{
-							Url:         "value",
-							ValueString: of("MDAT_erheben"),
-						},
+						{Url: "key", ValueString: of("checkPolicy")},
+						{Url: "value", ValueString: of("MDAT_erheben")},
 					}},
 				{
 					Url: ExternalPropertyElementSystem,
 					Extension: []fhir.Extension{
-						{
-							Url:         "key",
-							ValueString: of("departments"),
-						},
-						{
-							Url:         "value",
-							ValueString: of("bar-dep"),
-						},
+						{Url: "key", ValueString: of("departments")},
+						{Url: "value", ValueString: of("bar-dep")},
 					},
 				},
 			},
+		},
+		{
+			Identifier:  []fhir.Identifier{{Value: of("MissingCheck")}},
+			Description: of("Domain missing check policy"),
+			Extension:   []fhir.Extension{signerId},
+		},
+		{
+			Identifier:  []fhir.Identifier{{Value: of("StatusNotActive")}},
+			Description: of("Domain status not active"),
+			Status:      fhir.ResearchStudyStatusWithdrawn,
+			Extension: []fhir.Extension{signerId,
+				{
+					Url: ExternalPropertyElementSystem,
+					Extension: []fhir.Extension{
+						{Url: "key", ValueString: of("checkPolicy")},
+						{Url: "value", ValueString: of("MDAT_erheben")},
+					}}},
 		},
 	}, nil
 }
