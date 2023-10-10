@@ -8,12 +8,12 @@ import (
 	"time"
 )
 
-func TestUpdateCache(t *testing.T) {
+func TestInitialize(t *testing.T) {
 	c := &TestGicsClient{}
 	d := NewDomainCache(c, 1*time.Hour)
 
 	// act
-	d.updateCache()
+	d.Initialize()
 
 	expected := []Domain{
 		{
