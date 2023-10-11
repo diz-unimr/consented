@@ -10,5 +10,5 @@ const (
 )
 
 func (s Status) String() string {
-	return [...]string{"not-asked", "accepted", "declined", "declined"}[s]
+	return [...]string{"not-asked", "accepted", "declined", "expired"}[s]
 }
