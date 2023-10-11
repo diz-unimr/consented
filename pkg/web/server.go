@@ -75,7 +75,7 @@ func (s *Server) handleConsentStatus(c *gin.Context) {
 	// body is optional
 	_ = c.ShouldBindJSON(&r)
 
-	var response []consent.DomainStatus
+	response := make([]consent.DomainStatus, 0)
 	// filter domains by department
 	for _, d := range s.filterDomains(r.Departments) {
 
