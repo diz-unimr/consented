@@ -39,6 +39,7 @@ func ParseConsent(b *fhir.Bundle, domain Domain) (*DomainStatus, error) {
 		Policies:    make([]Policy, 0),
 	}
 
+	checkPolicyFound := false
 	// check consent resources
 	for _, e := range b.Entry {
 		r, _ := fhir.UnmarshalConsent(e.Resource)
@@ -60,6 +61,7 @@ func ParseConsent(b *fhir.Bundle, domain Domain) (*DomainStatus, error) {
 		// status policy & expiration
 		now := time.Now()
 		if p.Code == domain.CheckPolicyCode {
+			checkPolicyFound = true
 			expires := parseTime(r.Provision.Period.End)
 			if expires == noExpiryDate {
 				ds.Expires = nil
@@ -80,6 +82,15 @@ func ParseConsent(b *fhir.Bundle, domain Domain) (*DomainStatus, error) {
 				ds.Status = Status(Declined).String()
 			}
 		}
+	}
+
+	// checkPolicy not found
+	if !checkPolicyFound {
+		log.Error().
+			Str("domain", domain.Name).
+			Str("checkPolicy", domain.CheckPolicyCode).
+			Msg("Unable to determine consent status. Configured policy not found")
+		return nil, errors.New("checkPolicy not found for domain")
 	}
 
 	return &ds, nil

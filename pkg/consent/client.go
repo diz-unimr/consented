@@ -12,7 +12,7 @@ import (
 
 type GicsClient interface {
 	GetDomains() ([]fhir.ResearchStudy, error)
-	GetConsentPolicies(signerId string, domain Domain) (*fhir.Bundle, error, int)
+	GetConsentPolicies(signerId string, domain Domain) (*fhir.Bundle, error)
 }
 
 type GicsHttpClient struct {
@@ -82,7 +82,7 @@ func parseResponse(response *http.Response, err error) ([]byte, error) {
 	return responseData, nil
 }
 
-func (c *GicsHttpClient) GetConsentPolicies(signerId string, domain Domain) (*fhir.Bundle, error, int) {
+func (c *GicsHttpClient) GetConsentPolicies(signerId string, domain Domain) (*fhir.Bundle, error) {
 
 	fhirRequest := fhir.Parameters{
 		Id:   nil,
@@ -100,7 +100,7 @@ func (c *GicsHttpClient) GetConsentPolicies(signerId string, domain Domain) (*fh
 	}
 	r, err := fhirRequest.MarshalJSON()
 	if err != nil {
-		return nil, err, http.StatusInternalServerError
+		return nil, err
 	}
 
 	// post request to gICS
@@ -108,16 +108,16 @@ func (c *GicsHttpClient) GetConsentPolicies(signerId string, domain Domain) (*fh
 
 	if err != nil {
 		log.Error().Err(err).Msg("POST request to gICS failed for: " + c.BaseUrl + "/$currentPolicyStatesForPerson")
-		return nil, err, http.StatusBadGateway
+		return nil, err
 	}
 
 	res, err := fhir.UnmarshalBundle(data)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to deserialize FHIR response from  gICS. Expected 'Parameters' resource")
-		return nil, err, http.StatusBadGateway
+		return nil, err
 	}
 
-	return &res, nil, http.StatusOK
+	return &res, nil
 }
 
 func (c *GicsHttpClient) postRequest(requestUrl string, body []byte) (*http.Response, error) {

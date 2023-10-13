@@ -47,7 +47,7 @@ func TestGetConsentPolicies(t *testing.T) {
 	}})
 
 	// act
-	actual, _, _ := c.GetConsentPolicies("bla", Domain{
+	actual, _ := c.GetConsentPolicies("bla", Domain{
 		Name:            "Foo",
 		Description:     "Bar",
 		CheckPolicyCode: "123",

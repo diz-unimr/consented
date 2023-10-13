@@ -80,12 +80,9 @@ func (s *Server) handleConsentStatus(c *gin.Context) {
 	for _, d := range s.filterDomains(r.Departments) {
 
 		// get status per domain
-		ds, err, code := s.createDomainStatus(r, d)
+		ds, err := s.createDomainStatus(r, d)
 		if err != nil {
-			c.JSON(code, gin.H{
-				"error": err.Error(),
-			})
-			return
+			continue
 		}
 
 		response = append(response, *ds)
@@ -117,20 +114,20 @@ func (s *Server) filterDomains(deps []string) []consent.Domain {
 	return domains
 }
 
-func (s *Server) createDomainStatus(r StatusRequest, d consent.Domain) (*consent.DomainStatus, error, int) {
+func (s *Server) createDomainStatus(r StatusRequest, d consent.Domain) (*consent.DomainStatus, error) {
 	// get current policies
-	resp, err, code := s.gicsClient.GetConsentPolicies(r.PatientId, d)
+	resp, err := s.gicsClient.GetConsentPolicies(r.PatientId, d)
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to get consent status from gICS")
-		return nil, err, code
+		return nil, err
 	}
 
 	// parse resources
 	ds, err := consent.ParseConsent(resp, d)
 	if err != nil {
 		log.Error().Err(err).Msg("Unable to parse consent policies from gICS")
-		return nil, err, http.StatusInternalServerError
+		return nil, err
 	}
 
-	return ds, nil, http.StatusOK
+	return ds, nil
 }

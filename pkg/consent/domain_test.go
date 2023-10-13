@@ -3,7 +3,6 @@ package consent
 import (
 	"github.com/samply/golang-fhir-models/fhir-models/fhir"
 	"github.com/stretchr/testify/assert"
-	"net/http"
 	"testing"
 	"time"
 )
@@ -93,10 +92,22 @@ func (c *TestGicsClient) GetDomains() ([]fhir.ResearchStudy, error) {
 						{Url: "value", ValueString: of("MDAT_erheben")},
 					}}},
 		},
+		{
+			Identifier:  []fhir.Identifier{{Value: of("CheckPolicyMisconfigured")}},
+			Description: of("Misspelled checkPolicy on domain"),
+			Status:      fhir.ResearchStudyStatusWithdrawn,
+			Extension: []fhir.Extension{signerId,
+				{
+					Url: ExternalPropertyElementSystem,
+					Extension: []fhir.Extension{
+						{Url: "key", ValueString: of("checkPolicy")},
+						{Url: "value", ValueString: of("MDAT###erheben")},
+					}}},
+		},
 	}, nil
 }
 
-func (c *TestGicsClient) GetConsentPolicies(_ string, _ Domain) (*fhir.Bundle, error, int) {
+func (c *TestGicsClient) GetConsentPolicies(_ string, _ Domain) (*fhir.Bundle, error) {
 
-	return &fhir.Bundle{}, nil, http.StatusOK
+	return &fhir.Bundle{}, nil
 }

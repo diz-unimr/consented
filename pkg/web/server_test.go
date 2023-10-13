@@ -179,7 +179,7 @@ func (c *TestGicsClient) GetDomains() ([]fhir.ResearchStudy, error) {
 	return []fhir.ResearchStudy{}, nil
 }
 
-func (c *TestGicsClient) GetConsentPolicies(_ string, domain consent.Domain) (*fhir.Bundle, error, int) {
+func (c *TestGicsClient) GetConsentPolicies(_ string, domain consent.Domain) (*fhir.Bundle, error) {
 	startTime := of(time.Now().Format(time.RFC3339))
 	r := fhir.Consent{
 		Meta: &fhir.Meta{LastUpdated: startTime},
@@ -204,7 +204,7 @@ func (c *TestGicsClient) GetConsentPolicies(_ string, domain consent.Domain) (*f
 		Entry: []fhir.BundleEntry{{
 			Resource: cs,
 		}},
-	}, nil, http.StatusOK
+	}, nil
 }
 
 func of[E any](e E) *E {
