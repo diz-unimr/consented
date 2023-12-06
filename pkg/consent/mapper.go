@@ -98,7 +98,7 @@ func ParseConsent(b *fhir.Bundle, domain Domain) (*DomainStatus, error) {
 
 func parsePolicy(prov *fhir.ConsentProvision) (*Policy, error) {
 	// check for provision value(s)
-	if p := prov.Provision; p != nil && len(p) > 0 && len(p[0].Code) > 0 && len(p[0].Code[0].Coding) > 0 {
+	if p := prov.Provision; len(p) > 0 && len(p[0].Code) > 0 && len(p[0].Code[0].Coding) > 0 {
 		// take first coding
 		co := p[0].Code[0].Coding[0]
 		var name string
