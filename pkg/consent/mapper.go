@@ -62,7 +62,7 @@ func ParseConsent(b *fhir.Bundle, domain Domain) (*DomainStatus, error) {
 		now := time.Now()
 		if p.Code == domain.CheckPolicyCode {
 			checkPolicyFound = true
-			expires := parseTime(r.Provision.Period.End)
+			expires := parseTime(r.Provision.Provision[0].Period.End)
 			if expires == noExpiryDate {
 				ds.Expires = nil
 			} else {
@@ -96,10 +96,11 @@ func ParseConsent(b *fhir.Bundle, domain Domain) (*DomainStatus, error) {
 	return &ds, nil
 }
 
-func parsePolicy(p *fhir.ConsentProvision) (*Policy, error) {
-	if len(p.Code) > 0 && len(p.Code[0].Coding) > 0 {
-		// take first
-		co := p.Code[0].Coding[0]
+func parsePolicy(prov *fhir.ConsentProvision) (*Policy, error) {
+	// check for provision value(s)
+	if p := prov.Provision; p != nil && len(p) > 0 && len(p[0].Code) > 0 && len(p[0].Code[0].Coding) > 0 {
+		// take first coding
+		co := p[0].Code[0].Coding[0]
 		var name string
 		if co.Display != nil && strings.TrimSpace(*co.Display) != "" {
 			name = strings.TrimSpace(*co.Display)
@@ -107,7 +108,7 @@ func parsePolicy(p *fhir.ConsentProvision) (*Policy, error) {
 			name = *co.Code
 		}
 
-		return &Policy{name, p.Type.Code() == fhir.ConsentProvisionTypePermit.Code(), *co.Code}, nil
+		return &Policy{name, p[0].Type.Code() == fhir.ConsentProvisionTypePermit.Code(), *co.Code}, nil
 	}
 
 	return nil, errors.New("missing policy coding")

@@ -184,15 +184,17 @@ func (c *TestGicsClient) GetConsentPolicies(_ string, domain consent.Domain) (*f
 	r := fhir.Consent{
 		Meta: &fhir.Meta{LastUpdated: startTime},
 		Provision: &fhir.ConsentProvision{
-			Type: of(fhir.ConsentProvisionTypePermit),
-			Period: &fhir.Period{
-				Start: startTime,
-				End:   of(time.Now().AddDate(5, 0, 0).Format(time.RFC3339)),
-			},
-			Code: []fhir.CodeableConcept{{
-				Coding: []fhir.Coding{{
-					System: of("https://ths-greifswald.de/fhir/CodeSystem/gics/Policy/" + domain.Name),
-					Code:   &domain.CheckPolicyCode,
+			Provision: []fhir.ConsentProvision{{
+				Type: of(fhir.ConsentProvisionTypePermit),
+				Period: &fhir.Period{
+					Start: startTime,
+					End:   of(time.Now().AddDate(5, 0, 0).Format(time.RFC3339)),
+				},
+				Code: []fhir.CodeableConcept{{
+					Coding: []fhir.Coding{{
+						System: of("https://ths-greifswald.de/fhir/CodeSystem/gics/Policy/" + domain.Name),
+						Code:   &domain.CheckPolicyCode,
+					}},
 				}},
 			}},
 		},
