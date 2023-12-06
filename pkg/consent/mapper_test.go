@@ -68,6 +68,21 @@ func TestParseConsent(t *testing.T) {
 				errors.New("checkPolicy not found for domain"),
 			},
 		},
+		{
+			name: "parseConsent_FailsWithNoPoliciesFound",
+			domain: Domain{
+				Name:            "Test",
+				Description:     "Test domain",
+				CheckPolicyCode: "MDAT_erheben",
+				PersonIdSystem:  "Patient-ID",
+			},
+			// policy consent resources
+			policies: invalidate(getTestConsentPolicies(now)),
+			expected: Expected{
+				nil,
+				errors.New("missing policy coding"),
+			},
+		},
 	}
 
 	for _, c := range cases {
@@ -75,6 +90,14 @@ func TestParseConsent(t *testing.T) {
 			parseConsentHandler(t, c)
 		})
 	}
+}
+
+func invalidate(c []fhir.Consent) []fhir.Consent {
+	// invalid policy mapping (i.e. gICS 2023.1.0)
+	prov := c[0].Provision.Provision[0]
+	c[0].Provision = &prov
+
+	return c
 }
 
 func getTestConsentPolicies(from time.Time) []fhir.Consent {
