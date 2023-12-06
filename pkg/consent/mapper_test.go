@@ -68,6 +68,21 @@ func TestParseConsent(t *testing.T) {
 				errors.New("checkPolicy not found for domain"),
 			},
 		},
+		{
+			name: "parseConsent_FailsWithNoPoliciesFound",
+			domain: Domain{
+				Name:            "Test",
+				Description:     "Test domain",
+				CheckPolicyCode: "MDAT_erheben",
+				PersonIdSystem:  "Patient-ID",
+			},
+			// policy consent resources
+			policies: invalidate(getTestConsentPolicies(now)),
+			expected: Expected{
+				nil,
+				errors.New("missing policy coding"),
+			},
+		},
 	}
 
 	for _, c := range cases {
@@ -77,6 +92,14 @@ func TestParseConsent(t *testing.T) {
 	}
 }
 
+func invalidate(c []fhir.Consent) []fhir.Consent {
+	// invalid policy mapping (i.e. gICS 2023.1.0)
+	prov := c[0].Provision.Provision[0]
+	c[0].Provision = &prov
+
+	return c
+}
+
 func getTestConsentPolicies(from time.Time) []fhir.Consent {
 	return []fhir.Consent{
 		{
@@ -84,15 +107,17 @@ func getTestConsentPolicies(from time.Time) []fhir.Consent {
 				LastUpdated: of(from.Format(time.RFC3339)),
 			},
 			Provision: of(fhir.ConsentProvision{
-				Type: of(fhir.ConsentProvisionTypePermit),
-				Period: &fhir.Period{
-					Start: of(from.Format(time.RFC3339)),
-					End:   of(from.AddDate(5, 0, 0).Format(time.RFC3339)),
-				},
-				Code: []fhir.CodeableConcept{{
-					Coding: []fhir.Coding{{
-						System: of("https://ths-greifswald.de/fhir/CodeSystem/gics/Policy/MII"),
-						Code:   of("MDAT_erheben"),
+				Provision: []fhir.ConsentProvision{{
+					Type: of(fhir.ConsentProvisionTypePermit),
+					Period: &fhir.Period{
+						Start: of(from.Format(time.RFC3339)),
+						End:   of(from.AddDate(5, 0, 0).Format(time.RFC3339)),
+					},
+					Code: []fhir.CodeableConcept{{
+						Coding: []fhir.Coding{{
+							System: of("https://ths-greifswald.de/fhir/CodeSystem/gics/Policy/MII"),
+							Code:   of("MDAT_erheben"),
+						}},
 					}},
 				}},
 			}),
@@ -102,15 +127,17 @@ func getTestConsentPolicies(from time.Time) []fhir.Consent {
 				LastUpdated: of(from.Format(time.RFC3339)),
 			},
 			Provision: of(fhir.ConsentProvision{
-				Type: of(fhir.ConsentProvisionTypeDeny),
-				Period: &fhir.Period{
-					Start: of(from.Format(time.RFC3339)),
-					End:   of(from.AddDate(10, 0, 0).Format(time.RFC3339)),
-				},
-				Code: []fhir.CodeableConcept{{
-					Coding: []fhir.Coding{{
-						System: of("https://ths-greifswald.de/fhir/CodeSystem/gics/Policy/MII"),
-						Code:   of("MDAT_speichern_verarbeiten"),
+				Provision: []fhir.ConsentProvision{{
+					Type: of(fhir.ConsentProvisionTypeDeny),
+					Period: &fhir.Period{
+						Start: of(from.Format(time.RFC3339)),
+						End:   of(from.AddDate(10, 0, 0).Format(time.RFC3339)),
+					},
+					Code: []fhir.CodeableConcept{{
+						Coding: []fhir.Coding{{
+							System: of("https://ths-greifswald.de/fhir/CodeSystem/gics/Policy/MII"),
+							Code:   of("MDAT_speichern_verarbeiten"),
+						}},
 					}},
 				}},
 			}),
@@ -177,15 +204,17 @@ func TestParsePolicy(t *testing.T) {
 				ct = fhir.ConsentProvisionTypePermit
 			}
 			p := fhir.ConsentProvision{
-				Type: &ct,
-				Period: &fhir.Period{
-					Start: of(now.Format(time.RFC3339)),
-					End:   of(now.AddDate(5, 0, 0).Format(time.RFC3339)),
-				},
-				Code: []fhir.CodeableConcept{{
-					Coding: []fhir.Coding{{
-						Code:    &c.code,
-						Display: &c.display,
+				Provision: []fhir.ConsentProvision{{
+					Type: &ct,
+					Period: &fhir.Period{
+						Start: of(now.Format(time.RFC3339)),
+						End:   of(now.AddDate(5, 0, 0).Format(time.RFC3339)),
+					},
+					Code: []fhir.CodeableConcept{{
+						Coding: []fhir.Coding{{
+							Code:    &c.code,
+							Display: &c.display,
+						}},
 					}},
 				}},
 			}
