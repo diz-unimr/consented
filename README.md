@@ -184,7 +184,7 @@ Upper case env variables are supported as well as underscores (`_`) instead of `
 
 Example via `docker compose`:
 ```yml
-consent-to-fhir:
+consented:
     image: ghcr.io/diz-unimr/consented:latest
     restart: unless-stopped
     environment:
