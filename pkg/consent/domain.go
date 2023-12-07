@@ -30,6 +30,7 @@ type DomainCache struct {
 	Client         GicsClient
 	UpdateInterval time.Duration
 	Initialized    bool
+	IsHealthy      bool
 }
 
 func NewDomainCache(c GicsClient, interval time.Duration) *DomainCache {
@@ -39,7 +40,7 @@ func NewDomainCache(c GicsClient, interval time.Duration) *DomainCache {
 func (d *DomainCache) Initialize() chan bool {
 
 	// initial call
-	d.updateCache()
+	d.IsHealthy = d.updateCache()
 	log.Info().Int("domains", len(d.Domains)).Str("update-interval", d.UpdateInterval.String()).Msg("Successfully initialized domains. Updating periodically.")
 
 	// init polling
@@ -49,7 +50,7 @@ func (d *DomainCache) Initialize() chan bool {
 		for {
 			select {
 			case <-ticker.C:
-				d.updateCache()
+				d.IsHealthy = d.updateCache()
 			case <-quit:
 				ticker.Stop()
 				return
@@ -59,12 +60,12 @@ func (d *DomainCache) Initialize() chan bool {
 	return quit
 }
 
-func (d *DomainCache) updateCache() {
+func (d *DomainCache) updateCache() bool {
 	// get domains
 	rs, err := d.Client.GetDomains()
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to update domain cache. Data might be out of date.")
-		return
+		return false
 	}
 
 	// build domain structs
@@ -106,6 +107,7 @@ func (d *DomainCache) updateCache() {
 
 	d.Domains = result
 	log.Debug().Str("domains", fmt.Sprintf("%s", d.Domains)).Msg("Updated domain cache")
+	return true
 }
 
 func parseIdSystem(ext []fhir.Extension) *string {

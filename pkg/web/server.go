@@ -52,6 +52,7 @@ func (s *Server) setupRouter() *gin.Engine {
 	r.POST("/consent/status/:pid", gin.BasicAuth(gin.Accounts{
 		s.config.App.Http.Auth.User: s.config.App.Http.Auth.Password,
 	}), s.handleConsentStatus)
+	r.GET("/health", s.checkHealth)
 	r.NoRoute(gin.BasicAuth(gin.Accounts{
 		s.config.App.Http.Auth.User: s.config.App.Http.Auth.Password,
 	}), func(c *gin.Context) {
@@ -130,4 +131,16 @@ func (s *Server) createDomainStatus(r StatusRequest, d consent.Domain) (*consent
 	}
 
 	return ds, nil
+}
+
+func (s *Server) checkHealth(c *gin.Context) {
+	if s.domainCache.IsHealthy {
+		c.JSON(http.StatusOK, gin.H{
+			"healthy": true,
+		})
+	} else {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"healthy": false,
+		})
+	}
 }
