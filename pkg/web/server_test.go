@@ -17,10 +17,12 @@ import (
 type HandlerTestCase struct {
 	name           string
 	requestUrl     string
+	method         string
 	Auth           config.Auth
 	body           string
 	responseStatus int
 	response       string
+	healthy        bool
 }
 
 type FilterDomainTestCase struct {
@@ -94,25 +96,11 @@ func handler(t *testing.T, data HandlerTestCase) {
 		Initialized: true,
 	}
 	s.gicsClient = &TestGicsClient{}
-	r := s.setupRouter()
+	s.config.App.Http.Auth = testAuth
 
-	var body io.Reader
-	if data.body != "" {
-		body = bytes.NewReader([]byte(data.body))
-	}
-	req, _ := http.NewRequest(http.MethodPost, data.requestUrl, body)
-	req.SetBasicAuth(data.Auth.User, data.Auth.Password)
-	w := httptest.NewRecorder()
+	data.method = http.MethodPost
 
-	r.ServeHTTP(w, req)
-	respData, _ := io.ReadAll(w.Body)
-	response := string(respData)
-
-	// assert code
-	assert.Equal(t, data.responseStatus, w.Code)
-	// assert body
-	ja := jsonassert.New(t)
-	ja.Assertf(response, data.response)
+	testRoute(t, s, data)
 }
 
 func TestFilterDomains(t *testing.T) {
@@ -207,6 +195,74 @@ func (c *TestGicsClient) GetConsentPolicies(_ string, domain consent.Domain) (*f
 			Resource: cs,
 		}},
 	}, nil
+}
+
+func TestCheckHealth(t *testing.T) {
+	cases := []HandlerTestCase{
+		{
+			name:           "isHealthy",
+			healthy:        true,
+			responseStatus: http.StatusOK,
+			response:       "{\"healthy\": true}",
+		},
+		{
+			name:           "notHealthy",
+			healthy:        false,
+			responseStatus: http.StatusInternalServerError,
+			response:       "{\"healthy\": false}",
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			checkHealth(t, c)
+		})
+	}
+}
+
+func checkHealth(t *testing.T, data HandlerTestCase) {
+
+	// setup config
+	c := config.AppConfig{
+		App: config.App{
+			Http: config.Http{
+				Auth: testAuth,
+			},
+		},
+	}
+
+	s := &Server{config: c, domainCache: &consent.DomainCache{IsHealthy: data.healthy}}
+	data.method = http.MethodGet
+	data.requestUrl = "/health"
+
+	testRoute(t, s, data)
+}
+
+func testRoute(t *testing.T, s *Server, data HandlerTestCase) {
+	r := s.setupRouter()
+
+	var body io.Reader
+	if data.body != "" {
+		body = bytes.NewReader([]byte(data.body))
+	}
+
+	req, _ := http.NewRequest(data.method, data.requestUrl, body)
+	req.SetBasicAuth(data.Auth.User, data.Auth.Password)
+	w := httptest.NewRecorder()
+
+	r.ServeHTTP(w, req)
+
+	respData, _ := io.ReadAll(w.Body)
+	response := string(respData)
+
+	// assert code
+	assert.Equal(t, data.responseStatus, w.Code)
+
+	if data.response != "" {
+		// assert body
+		ja := jsonassert.New(t)
+		ja.Assertf(response, data.response)
+	}
 }
 
 func of[E any](e E) *E {
