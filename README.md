@@ -125,15 +125,6 @@ _See `Policy` response below._
 >```json
 >[
 >    {
->      "domain": "Test",
->      "description": "Test consent",
->      "status": "not-asked",
->      "last-updated": null,
->      "expires": null,
->      "ask-consent": true,
->      "policies": []
->    },
->    {
 >      "domain": "MII",
 >      "description": "Broad Consent",
 >      "status": "declined",
