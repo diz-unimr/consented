@@ -11,6 +11,7 @@ import (
 const (
 	ContextIdentifierElementSystem = "http://fhir.de/ConsentManagement/StructureDefinition/ContextIdentifier"
 	ExternalPropertyElementSystem  = "https://ths-greifswald.de/fhir/StructureDefinition/gics/ExternalPropertyElement"
+	TemplateType                   = "http://fhir.de/ConsentManagement/CodeSystem/TemplateType"
 )
 
 type Domain struct {
@@ -19,6 +20,7 @@ type Domain struct {
 	CheckPolicyCode string
 	PersonIdSystem  string
 	Departments     []string
+	WithdrawalUri   string
 }
 
 func (d Domain) String() string {
@@ -41,7 +43,8 @@ func (d *DomainCache) Initialize() chan bool {
 
 	// initial call
 	d.IsHealthy = d.updateCache()
-	log.Info().Int("domains", len(d.Domains)).Str("update-interval", d.UpdateInterval.String()).Msg("Successfully initialized domains. Updating periodically.")
+	log.Info().Int("domains", len(d.Domains)).Str("update-interval", d.UpdateInterval.String()).
+		Msg("Successfully initialized domains. Updating periodically.")
 
 	// init polling
 	ticker := time.NewTicker(d.UpdateInterval)
@@ -100,6 +103,10 @@ func (d *DomainCache) updateCache() bool {
 			domain.CheckPolicyCode = val
 		} else {
 			continue
+		}
+
+		if t, e := d.Client.GetTemplate(domain.Name, "WITHDRAWAL"); e == nil {
+			domain.WithdrawalUri = t
 		}
 
 		result = append(result, domain)

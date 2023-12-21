@@ -8,11 +8,15 @@ import (
 	"github.com/samply/golang-fhir-models/fhir-models/fhir"
 	"io"
 	"net/http"
+	"net/url"
+	"path"
 )
 
 type GicsClient interface {
 	GetDomains() ([]fhir.ResearchStudy, error)
 	GetConsentPolicies(signerId string, domain Domain) (*fhir.Bundle, error)
+	GetTemplate(domain string, templateType string) (string, error)
+	GetSourceReferenceTemplate(id string) string
 }
 
 type GicsHttpClient struct {
@@ -120,19 +124,59 @@ func (c *GicsHttpClient) GetConsentPolicies(signerId string, domain Domain) (*fh
 	return &res, nil
 }
 
-func (c *GicsHttpClient) postRequest(requestUrl string, body []byte) (*http.Response, error) {
-	req, err := http.NewRequest(http.MethodPost, requestUrl,
-		bytes.NewBuffer(body))
+func (c *GicsHttpClient) GetTemplate(domain string, targetType string) (string, error) {
+	base, err := url.Parse(c.BaseUrl + "Questionnaire")
 	if err != nil {
-		log.Fatal().Err(err).Msg("Failed to create POST request")
-		return nil, err
+		return "", err
 	}
-	req.Header.Set("Content-Type", "application/fhir+json")
-	if c.Auth != nil {
-		req.SetBasicAuth(c.Auth.User, c.Auth.Password)
+	params := url.Values{}
+	params.Add("useContextIdentifier", domain)
+	params.Add("context-type", "TemplateFrame")
+	base.RawQuery = params.Encode()
+
+	data, err := parseResponse(c.newRequest(http.MethodGet, base.String(), nil))
+
+	// error handling
+	if err != nil {
+		return "", err
 	}
 
-	return http.DefaultClient.Do(req)
+	// unmarshal
+	bundle, err := fhir.UnmarshalBundle(data)
+	for _, t := range bundle.Entry {
+		if r, err := fhir.UnmarshalQuestionnaire(t.Resource); err == nil {
+			coding := r.Code[0]
+			if *coding.System == TemplateType && *coding.Code == targetType {
+				return path.Base(*r.Url), nil
+			}
+
+		} else {
+			return "", err
+		}
+	}
+
+	return "", nil
+}
+
+func (c *GicsHttpClient) GetSourceReferenceTemplate(ref string) string {
+	q, err := parseResponse(c.newRequest(http.MethodGet, c.BaseUrl+ref, nil))
+	if err != nil {
+		return ""
+	}
+
+	if qs, err := fhir.UnmarshalQuestionnaireResponse(q); err == nil {
+		if qs.Questionnaire == nil {
+			return ""
+		}
+
+		return path.Base(*qs.Questionnaire)
+	}
+
+	return ""
+}
+
+func (c *GicsHttpClient) postRequest(requestUrl string, body []byte) (*http.Response, error) {
+	return c.newRequest(http.MethodPost, requestUrl, bytes.NewBuffer(body))
 }
 
 func (c *GicsHttpClient) getRequest(requestUrl string) (*http.Response, error) {

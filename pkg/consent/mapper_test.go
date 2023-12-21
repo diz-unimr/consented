@@ -44,7 +44,6 @@ func TestParseConsent(t *testing.T) {
 					Description: "Test domain",
 					Status:      "accepted",
 					LastUpdated: &now,
-					Expires:     of(now.AddDate(5, 0, 0)),
 					AskConsent:  false,
 					Policies: []Policy{
 						{"MDAT_erheben", true, "MDAT_erheben"},
@@ -103,9 +102,7 @@ func invalidate(c []fhir.Consent) []fhir.Consent {
 func getTestConsentPolicies(from time.Time) []fhir.Consent {
 	return []fhir.Consent{
 		{
-			Meta: &fhir.Meta{
-				LastUpdated: of(from.Format(time.RFC3339)),
-			},
+			DateTime: of(from.Format(time.RFC3339)),
 			Provision: of(fhir.ConsentProvision{
 				Provision: []fhir.ConsentProvision{{
 					Type: of(fhir.ConsentProvisionTypePermit),
@@ -123,9 +120,7 @@ func getTestConsentPolicies(from time.Time) []fhir.Consent {
 			}),
 		},
 		{
-			Meta: &fhir.Meta{
-				LastUpdated: of(from.Format(time.RFC3339)),
-			},
+			DateTime: of(from.Format(time.RFC3339)),
 			Provision: of(fhir.ConsentProvision{
 				Provision: []fhir.ConsentProvision{{
 					Type: of(fhir.ConsentProvisionTypeDeny),
@@ -156,7 +151,7 @@ func parseConsentHandler(t *testing.T, c ParseConsentTestCase) {
 	bundle := &fhir.Bundle{Entry: entries}
 
 	// act
-	res, err := ParseConsent(bundle, c.domain)
+	res, err := ParseConsent(bundle, c.domain, nil)
 
 	assert.Equal(t, c.expected.result, res)
 	assert.Equal(t, c.expected.error, err)
