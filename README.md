@@ -88,17 +88,16 @@ _Response JSON interface definitions below._
 
 _See `Policy` response below._
 
-| property     | description                      | type                                                      |
-|--------------|----------------------------------|-----------------------------------------------------------|
-| domain       | domain name                      | `string`                                                  |
-| description  | domain description               | `string`                                                  |
-| status       | consent status of `checkPolicy`  | `string` ("not-asked", "accepted", "declined", "expired") |
-| last-updated | date of last update              | `string` (ISO 8601 date)                                  |
-| expires      | date of expiry                   | `string` (ISO 8601 date)                                  |
-| ask-consent  | patient can be asked for consent | `boolean`                                                 |
-| policies     | domain name                      | Array of `Policy`                                         |
+| property     | description                      | type                                                     |
+|--------------|----------------------------------|----------------------------------------------------------|
+| domain       | domain name                      | `string`                                                 |
+| description  | domain description               | `string`                                                 |
+| status       | consent status of `checkPolicy`  | `string` ("accepted", "declined", "expired","withdrawn") |
+| last-updated | date of last update              | `string` (ISO 8601 date)                                 |
+| ask-consent  | patient can be asked for consent | `boolean`                                                |
+| policies     | domain name                      | Array of `Policy`                                        |
 
-⚠️ **NOTE**: `ask-consent` _can_ evaluate to `true`, if an existing valid consent exists but expires in less than a year.
+⚠️ **NOTE**: `ask-consent` _can_ evaluate to `true`, if an existing valid consent exists but will expire in less than a year.
 
 `Policy`
 
@@ -129,7 +128,6 @@ _See `Policy` response below._
 >      "description": "Broad Consent",
 >      "status": "declined",
 >      "last-updated": "2023-09-21T14:13:25.999+02:00",
->      "expires": "2028-09-21T00:00:00+02:00",
 >      "ask-consent": false,
 >      "policies": [
 >        {
