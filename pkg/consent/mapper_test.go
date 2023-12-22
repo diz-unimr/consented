@@ -117,6 +117,46 @@ func TestParseConsent(t *testing.T) {
 				}, nil,
 			},
 		},
+		// expired check policy
+		{
+			name: "expiredCheckPolicy",
+			domain: Domain{
+				Name:            "Test",
+				Description:     "Test domain",
+				CheckPolicyCode: "MDAT_erheben",
+			},
+			policies: []fhir.Consent{
+				{
+					DateTime: of(now.Format(time.RFC3339)),
+					Provision: of(fhir.ConsentProvision{
+						Provision: []fhir.ConsentProvision{{
+							Type: of(fhir.ConsentProvisionTypePermit),
+							Period: &fhir.Period{
+								Start: of(now.AddDate(-10, 0, 0).Format(time.RFC3339)),
+								End:   of(now.AddDate(-5, 0, 0).Format(time.RFC3339)),
+							},
+							Code: []fhir.CodeableConcept{{
+								Coding: []fhir.Coding{{
+									System: of("https://ths-greifswald.de/fhir/CodeSystem/gics/Policy/MII"),
+									Code:   of("MDAT_erheben"),
+								}},
+							}},
+						}},
+					}),
+				}},
+			expected: Expected{
+				&DomainStatus{
+					Domain:      "Test",
+					Description: "Test domain",
+					Status:      "expired",
+					LastUpdated: &now,
+					AskConsent:  true,
+					Policies: []Policy{
+						{"MDAT_erheben", true, "MDAT_erheben"},
+					},
+				}, nil,
+			},
+		},
 		{
 			name: "failsWithInvalidCheckPolicy",
 			domain: Domain{
