@@ -15,7 +15,7 @@ import (
 type GicsClient interface {
 	GetDomains() ([]fhir.ResearchStudy, error)
 	GetConsentPolicies(signerId string, domain Domain) (*fhir.Bundle, error)
-	GetTemplate(domain string, templateType string) (string, error)
+	GetTemplate(domain string, templateType string) string
 	GetSourceReferenceTemplate(id string) string
 }
 
@@ -124,38 +124,43 @@ func (c *GicsHttpClient) GetConsentPolicies(signerId string, domain Domain) (*fh
 	return &res, nil
 }
 
-func (c *GicsHttpClient) GetTemplate(domain string, targetType string) (string, error) {
-	base, err := url.Parse(c.BaseUrl + "Questionnaire")
-	if err != nil {
-		return "", err
-	}
+func (c *GicsHttpClient) GetTemplate(domain string, targetType string) string {
+
+	base, _ := url.Parse(c.BaseUrl + "Questionnaire")
 	params := url.Values{}
 	params.Add("useContextIdentifier", domain)
 	params.Add("context-type", "TemplateFrame")
 	base.RawQuery = params.Encode()
 
 	data, err := parseResponse(c.newRequest(http.MethodGet, base.String(), nil))
-
-	// error handling
 	if err != nil {
-		return "", err
+		log.Error().Err(err).Msg("Failed to parse response")
+		return ""
+
 	}
 
 	// unmarshal
 	bundle, err := fhir.UnmarshalBundle(data)
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to unmarshal response data")
+		return ""
+	}
+
 	for _, t := range bundle.Entry {
 		if r, err := fhir.UnmarshalQuestionnaire(t.Resource); err == nil {
 			coding := r.Code[0]
 			if *coding.System == TemplateType && *coding.Code == targetType {
-				return path.Base(*r.Url), nil
+				log.Debug().Str("type", targetType).Msg("Found gICS template")
+				return path.Base(*r.Url)
 			}
 
 		} else {
-			return "", err
+			log.Error().Err(err).Msg("Failed to parse Questionnaire response")
+			return ""
 		}
 	}
 
-	return "", nil
+	return ""
 }
 
 func (c *GicsHttpClient) GetSourceReferenceTemplate(ref string) string {

@@ -197,8 +197,8 @@ func (c *TestGicsClient) GetConsentPolicies(_ string, domain consent.Domain) (*f
 	}, nil
 }
 
-func (c *TestGicsClient) GetTemplate(_ string, _ string) (string, error) {
-	return "", nil
+func (c *TestGicsClient) GetTemplate(_ string, _ string) string {
+	return ""
 }
 
 func (c *TestGicsClient) GetSourceReferenceTemplate(_ string) string {

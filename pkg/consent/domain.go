@@ -105,9 +105,8 @@ func (d *DomainCache) updateCache() bool {
 			continue
 		}
 
-		if t, e := d.Client.GetTemplate(domain.Name, "WITHDRAWAL"); e == nil {
-			domain.WithdrawalUri = t
-		}
+		// check withdrawal template uri
+		domain.WithdrawalUri = d.Client.GetTemplate(domain.Name, "WITHDRAWAL")
 
 		result = append(result, domain)
 	}
