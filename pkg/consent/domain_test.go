@@ -116,6 +116,6 @@ func (c *TestGicsClient) GetTemplate(_ string, _ string) string {
 	return ""
 }
 
-func (c *TestGicsClient) GetSourceReferenceTemplate(_ string) string {
-	return ""
+func (c *TestGicsClient) GetSourceReferenceTemplate(ref string) string {
+	return ref
 }
