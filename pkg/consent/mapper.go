@@ -76,7 +76,7 @@ func ParseConsent(b *fhir.Bundle, domain Domain, c GicsClient) (*DomainStatus, e
 				// declined or withdrawn
 				ds.Status = Status(Declined).String()
 
-				if expires == noExpiryDate {
+				if noExpiryDate.Equal(expires) {
 					// check withdrawn state
 					if len(domain.WithdrawalUri) > 0 && domain.WithdrawalUri == c.GetSourceReferenceTemplate(*r.SourceReference.Reference) {
 						ds.Status = Status(Withdrawn).String()
