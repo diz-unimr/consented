@@ -111,3 +111,11 @@ func (c *TestGicsClient) GetConsentPolicies(_ string, _ Domain) (*fhir.Bundle, e
 
 	return &fhir.Bundle{}, nil
 }
+
+func (c *TestGicsClient) GetTemplate(_ string, _ string) string {
+	return ""
+}
+
+func (c *TestGicsClient) GetSourceReferenceTemplate(ref string) string {
+	return ref
+}

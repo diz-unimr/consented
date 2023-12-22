@@ -124,7 +124,7 @@ func (s *Server) createDomainStatus(r StatusRequest, d consent.Domain) (*consent
 	}
 
 	// parse resources
-	ds, err := consent.ParseConsent(resp, d)
+	ds, err := consent.ParseConsent(resp, d, s.gicsClient)
 	if err != nil {
 		log.Error().Err(err).Msg("Unable to parse consent policies from gICS")
 		return nil, err

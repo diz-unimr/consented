@@ -13,7 +13,6 @@ type DomainStatus struct {
 	Description string     `json:"description"`
 	Status      string     `json:"status"`
 	LastUpdated *time.Time `json:"last-updated"`
-	Expires     *time.Time `json:"expires"`
 	AskConsent  bool       `json:"ask-consent"`
 	Policies    []Policy   `json:"policies"`
 }
@@ -24,7 +23,7 @@ type Policy struct {
 	Code   string `json:"-"`
 }
 
-func ParseConsent(b *fhir.Bundle, domain Domain) (*DomainStatus, error) {
+func ParseConsent(b *fhir.Bundle, domain Domain, c GicsClient) (*DomainStatus, error) {
 
 	// fixed max date
 	noExpiryDate := time.Date(3000, 1, 1, 0, 0, 0, 0, time.Local)
@@ -45,7 +44,7 @@ func ParseConsent(b *fhir.Bundle, domain Domain) (*DomainStatus, error) {
 		r, _ := fhir.UnmarshalConsent(e.Resource)
 
 		// last updated
-		updated := parseTime(r.Meta.LastUpdated)
+		updated := parseTime(r.DateTime)
 		if ds.LastUpdated == nil || updated.After(*ds.LastUpdated) {
 			ds.LastUpdated = &updated
 		}
@@ -63,11 +62,6 @@ func ParseConsent(b *fhir.Bundle, domain Domain) (*DomainStatus, error) {
 		if p.Code == domain.CheckPolicyCode {
 			checkPolicyFound = true
 			expires := parseTime(r.Provision.Provision[0].Period.End)
-			if expires == noExpiryDate {
-				ds.Expires = nil
-			} else {
-				ds.Expires = &expires
-			}
 
 			ds.AskConsent = expires.Before(now.AddDate(1, 0, 0))
 
@@ -79,7 +73,13 @@ func ParseConsent(b *fhir.Bundle, domain Domain) (*DomainStatus, error) {
 				}
 
 			} else {
+				// declined
 				ds.Status = Status(Declined).String()
+
+				// check withdrawn state
+				if noExpiryDate.Equal(expires) && len(domain.WithdrawalUri) > 0 && domain.WithdrawalUri == c.GetSourceReferenceTemplate(*r.SourceReference.Reference) {
+					ds.Status = Status(Withdrawn).String()
+				}
 			}
 		}
 	}
@@ -117,7 +117,7 @@ func parsePolicy(prov *fhir.ConsentProvision) (*Policy, error) {
 func parseTime(dt *string) time.Time {
 	t, err := time.Parse(time.RFC3339, *dt)
 	if err != nil {
-		log.Error().Err(err).Msg("Unable to parse lastUpdated from Consent resource")
+		log.Error().Err(err).Msg("Unable to parse time from RFC3339 string")
 		return time.Time{}
 	}
 	return t

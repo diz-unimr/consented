@@ -29,7 +29,7 @@ func TestParseConsent(t *testing.T) {
 	// test cases
 	cases := []ParseConsentTestCase{
 		{
-			name: "parseConsent_Success",
+			name: "success",
 			domain: Domain{
 				Name:            "Test",
 				Description:     "Test domain",
@@ -44,7 +44,6 @@ func TestParseConsent(t *testing.T) {
 					Description: "Test domain",
 					Status:      "accepted",
 					LastUpdated: &now,
-					Expires:     of(now.AddDate(5, 0, 0)),
 					AskConsent:  false,
 					Policies: []Policy{
 						{"MDAT_erheben", true, "MDAT_erheben"},
@@ -53,8 +52,113 @@ func TestParseConsent(t *testing.T) {
 				}, nil,
 			},
 		},
+		// denied check policy
 		{
-			name: "parseConsent_FailsWithInvalidCheckPolicy",
+			name: "deniedCheckPolicy",
+			domain: Domain{
+				Name:            "Test",
+				Description:     "Test domain",
+				CheckPolicyCode: "MDAT_speichern_verarbeiten",
+			},
+			policies: getTestConsentPolicies(now),
+			expected: Expected{
+				&DomainStatus{
+					Domain:      "Test",
+					Description: "Test domain",
+					Status:      "declined",
+					LastUpdated: &now,
+					AskConsent:  false,
+					Policies: []Policy{
+						{"MDAT_erheben", true, "MDAT_erheben"},
+						{"MDAT_speichern_verarbeiten", false, "MDAT_speichern_verarbeiten"},
+					},
+				}, nil,
+			},
+		},
+		// withdrawn check policy
+		{
+			name: "withdrawnCheckPolicy",
+			domain: Domain{
+				Name:            "Test",
+				Description:     "Test domain",
+				CheckPolicyCode: "MDAT_erheben",
+				WithdrawalUri:   "WithdrawalTemplateUri",
+			},
+			policies: []fhir.Consent{
+				{
+					DateTime: of(now.Format(time.RFC3339)),
+					Provision: of(fhir.ConsentProvision{
+						Provision: []fhir.ConsentProvision{{
+							Type: of(fhir.ConsentProvisionTypeDeny),
+							Period: &fhir.Period{
+								Start: of(now.Format(time.RFC3339)),
+								End:   of(time.Date(3000, 1, 1, 0, 0, 0, 0, time.Local).Format(time.RFC3339)),
+							},
+							Code: []fhir.CodeableConcept{{
+								Coding: []fhir.Coding{{
+									System: of("https://ths-greifswald.de/fhir/CodeSystem/gics/Policy/MII"),
+									Code:   of("MDAT_erheben"),
+								}},
+							}},
+						}},
+					}),
+					SourceReference: &fhir.Reference{Reference: of("WithdrawalTemplateUri")},
+				}},
+			expected: Expected{
+				&DomainStatus{
+					Domain:      "Test",
+					Description: "Test domain",
+					Status:      "withdrawn",
+					LastUpdated: &now,
+					AskConsent:  false,
+					Policies: []Policy{
+						{"MDAT_erheben", false, "MDAT_erheben"},
+					},
+				}, nil,
+			},
+		},
+		// expired check policy
+		{
+			name: "expiredCheckPolicy",
+			domain: Domain{
+				Name:            "Test",
+				Description:     "Test domain",
+				CheckPolicyCode: "MDAT_erheben",
+			},
+			policies: []fhir.Consent{
+				{
+					DateTime: of(now.Format(time.RFC3339)),
+					Provision: of(fhir.ConsentProvision{
+						Provision: []fhir.ConsentProvision{{
+							Type: of(fhir.ConsentProvisionTypePermit),
+							Period: &fhir.Period{
+								Start: of(now.AddDate(-10, 0, 0).Format(time.RFC3339)),
+								End:   of(now.AddDate(-5, 0, 0).Format(time.RFC3339)),
+							},
+							Code: []fhir.CodeableConcept{{
+								Coding: []fhir.Coding{{
+									System: of("https://ths-greifswald.de/fhir/CodeSystem/gics/Policy/MII"),
+									Code:   of("MDAT_erheben"),
+								}},
+							}},
+						}},
+					}),
+				}},
+			expected: Expected{
+				&DomainStatus{
+					Domain:      "Test",
+					Description: "Test domain",
+					Status:      "expired",
+					LastUpdated: &now,
+					AskConsent:  true,
+					Policies: []Policy{
+						{"MDAT_erheben", true, "MDAT_erheben"},
+					},
+				}, nil,
+			},
+		},
+		{
+			name: "failsWithInvalidCheckPolicy",
 			domain: Domain{
 				Name:            "Test",
 				Description:     "Test domain",
@@ -69,7 +173,7 @@ func TestParseConsent(t *testing.T) {
 			},
 		},
 		{
-			name: "parseConsent_FailsWithNoPoliciesFound",
+			name: "failsWithNoPoliciesFound",
 			domain: Domain{
 				Name:            "Test",
 				Description:     "Test domain",
@@ -103,9 +207,7 @@ func invalidate(c []fhir.Consent) []fhir.Consent {
 func getTestConsentPolicies(from time.Time) []fhir.Consent {
 	return []fhir.Consent{
 		{
-			Meta: &fhir.Meta{
-				LastUpdated: of(from.Format(time.RFC3339)),
-			},
+			DateTime: of(from.Format(time.RFC3339)),
 			Provision: of(fhir.ConsentProvision{
 				Provision: []fhir.ConsentProvision{{
 					Type: of(fhir.ConsentProvisionTypePermit),
@@ -123,9 +225,7 @@ func getTestConsentPolicies(from time.Time) []fhir.Consent {
 			}),
 		},
 		{
-			Meta: &fhir.Meta{
-				LastUpdated: of(from.Format(time.RFC3339)),
-			},
+			DateTime: of(from.Format(time.RFC3339)),
 			Provision: of(fhir.ConsentProvision{
 				Provision: []fhir.ConsentProvision{{
 					Type: of(fhir.ConsentProvisionTypeDeny),
@@ -156,7 +256,7 @@ func parseConsentHandler(t *testing.T, c ParseConsentTestCase) {
 	bundle := &fhir.Bundle{Entry: entries}
 
 	// act
-	res, err := ParseConsent(bundle, c.domain)
+	res, err := ParseConsent(bundle, c.domain, &TestGicsClient{})
 
 	assert.Equal(t, c.expected.result, res)
 	assert.Equal(t, c.expected.error, err)
@@ -225,6 +325,34 @@ func TestParsePolicy(t *testing.T) {
 			assert.Equal(t, c.expected, *actual)
 		})
 	}
+}
+
+func TestParseTime(t *testing.T) {
+	loc, _ := time.LoadLocation("Europe/Berlin")
+
+	cases := []struct {
+		name     string
+		date     string
+		expected time.Time
+	}{
+		{
+			"isValidDate",
+			"2023-12-21T12:42:00+01:00",
+			time.Date(2023, 12, 21, 12, 42, 0, 0, loc),
+		},
+		{
+			"isInvalidDate",
+			"invalid-date-string",
+			time.Time{},
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			assert.WithinDuration(t, c.expected, parseTime(&c.date), 0)
+		})
+	}
+
 }
 
 func of[E any](e E) *E {

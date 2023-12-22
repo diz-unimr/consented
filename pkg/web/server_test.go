@@ -60,7 +60,7 @@ func TestHandleConsentStatus(t *testing.T) {
 			requestUrl:     "/consent/status/42",
 			Auth:           testAuth,
 			responseStatus: 200,
-			response:       `[{"domain":"Test","description":"Test Consent","status":"accepted","last-updated":"<<PRESENCE>>","expires":"<<PRESENCE>>","ask-consent": false,"policies":[{"name": "IDAT_TEST","permit": true}]}]`,
+			response:       `[{"domain":"Test","description":"Test Consent","status":"accepted","last-updated":"<<PRESENCE>>","ask-consent": false,"policies":[{"name": "IDAT_TEST","permit": true}]}]`,
 		},
 	}
 
@@ -170,7 +170,7 @@ func (c *TestGicsClient) GetDomains() ([]fhir.ResearchStudy, error) {
 func (c *TestGicsClient) GetConsentPolicies(_ string, domain consent.Domain) (*fhir.Bundle, error) {
 	startTime := of(time.Now().Format(time.RFC3339))
 	r := fhir.Consent{
-		Meta: &fhir.Meta{LastUpdated: startTime},
+		DateTime: startTime,
 		Provision: &fhir.ConsentProvision{
 			Provision: []fhir.ConsentProvision{{
 				Type: of(fhir.ConsentProvisionTypePermit),
@@ -195,6 +195,14 @@ func (c *TestGicsClient) GetConsentPolicies(_ string, domain consent.Domain) (*f
 			Resource: cs,
 		}},
 	}, nil
+}
+
+func (c *TestGicsClient) GetTemplate(_ string, _ string) string {
+	return ""
+}
+
+func (c *TestGicsClient) GetSourceReferenceTemplate(_ string) string {
+	return ""
 }
 
 func TestCheckHealth(t *testing.T) {
