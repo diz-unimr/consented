@@ -1,6 +1,7 @@
 package config
 
 import (
+	"github.com/rs/zerolog"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"os"
@@ -9,18 +10,29 @@ import (
 	"testing"
 )
 
-func TestLoadConfigWithEnv(t *testing.T) {
+func TestLoadConfigConfiguresLogger(t *testing.T) {
+	setProjectDir()
+
+	expected := "debug"
+	t.Setenv("APP_LOG_LEVEL", expected)
+
+	LoadConfig()
+
+	assert.Equal(t, zerolog.LevelDebugValue, zerolog.GlobalLevel().String())
+}
+
+func TestParseConfigWithEnv(t *testing.T) {
 	setProjectDir()
 
 	expected := "test"
 	t.Setenv("GICS_FHIR_BASE", expected)
 
-	config, _ := parseConfig(".")
+	config := LoadConfig()
 
 	assert.Equal(t, expected, config.Gics.Fhir.Base)
 }
 
-func TestLoadConfigFileNotFound(t *testing.T) {
+func TestParseConfigFileNotFound(t *testing.T) {
 	setProjectDir()
 
 	// config file not found
