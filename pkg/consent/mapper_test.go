@@ -158,6 +158,27 @@ func TestParseConsent(t *testing.T) {
 			},
 		},
 		{
+			name: "consentNotAsked",
+			domain: Domain{
+				Name:            "Test",
+				Description:     "Test domain",
+				CheckPolicyCode: "MDAT_erheben",
+				PersonIdSystem:  "Patient-ID",
+			},
+			// not consent
+			policies: []fhir.Consent{},
+			expected: Expected{
+				&DomainStatus{
+					Domain:      "Test",
+					Description: "Test domain",
+					Status:      "not-asked",
+					LastUpdated: nil,
+					AskConsent:  true,
+					Policies:    []Policy{},
+				}, nil,
+			},
+		},
+		{
 			name: "failsWithInvalidCheckPolicy",
 			domain: Domain{
 				Name:            "Test",
