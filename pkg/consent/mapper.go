@@ -38,6 +38,11 @@ func ParseConsent(b *fhir.Bundle, domain Domain, c GicsClient) (*DomainStatus, e
 		Policies:    make([]Policy, 0),
 	}
 
+	// return if bundle is empty
+	if len(b.Entry) == 0 {
+		return &ds, nil
+	}
+
 	checkPolicyFound := false
 	// check consent resources
 	for _, e := range b.Entry {
