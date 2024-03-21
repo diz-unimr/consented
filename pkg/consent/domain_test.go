@@ -24,12 +24,13 @@ func TestInitialize(t *testing.T) {
 		{
 			Name:            "Bar",
 			Description:     "Bar Domain",
+			DocumentRef:     of("bar-doc-id"),
 			CheckPolicyCode: "MDAT_erheben",
 			PersonIdSystem:  "https://ths-greifswald.de/fhir/gics/identifiers/Patienten-ID",
 			Departments:     []string{"bar-dep"},
 		}}
 
-	assert.Equal(t, expected, d.Domains)
+	assert.EqualValues(t, expected, d.Domains)
 }
 
 type TestGicsClient struct{}
@@ -65,12 +66,20 @@ func (c *TestGicsClient) GetDomains() ([]fhir.ResearchStudy, error) {
 					Extension: []fhir.Extension{
 						{Url: "key", ValueString: of("checkPolicy")},
 						{Url: "value", ValueString: of("MDAT_erheben")},
-					}},
+					},
+				},
 				{
 					Url: ExternalPropertyElementSystem,
 					Extension: []fhir.Extension{
 						{Url: "key", ValueString: of("departments")},
 						{Url: "value", ValueString: of("bar-dep")},
+					},
+				},
+				{
+					Url: ExternalPropertyElementSystem,
+					Extension: []fhir.Extension{
+						{Url: "key", ValueString: of("documentRef")},
+						{Url: "value", ValueString: of("bar-doc-id")},
 					},
 				},
 			},
