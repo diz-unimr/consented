@@ -60,7 +60,7 @@ func TestHandleConsentStatus(t *testing.T) {
 			requestUrl:     "/consent/status/42",
 			Auth:           testAuth,
 			responseStatus: 200,
-			response:       `[{"domain":"Test","description":"Test Consent","status":"accepted","last-updated":"<<PRESENCE>>","ask-consent": false,"policies":[{"name": "IDAT_TEST","permit": true}]}]`,
+			response:       `[{"domain":"Test","description":"Test Consent","document-ref":null,"status":"accepted","last-updated":"<<PRESENCE>>","ask-consent": false,"policies":[{"name": "IDAT_TEST","permit": true}]}]`,
 		},
 	}
 
