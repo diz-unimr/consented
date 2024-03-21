@@ -11,6 +11,7 @@ import (
 type DomainStatus struct {
 	Domain      string     `json:"domain"`
 	Description string     `json:"description"`
+	DocumentRef *string    `json:"document-ref"`
 	Status      string     `json:"status"`
 	LastUpdated *time.Time `json:"last-updated"`
 	AskConsent  bool       `json:"ask-consent"`
@@ -32,6 +33,7 @@ func ParseConsent(b *fhir.Bundle, domain Domain, c GicsClient) (*DomainStatus, e
 	ds := DomainStatus{
 		Domain:      domain.Name,
 		Description: domain.Description,
+		DocumentRef: domain.DocumentRef,
 		LastUpdated: nil,
 		AskConsent:  true,
 		Status:      Status(NotAsked).String(),

@@ -21,6 +21,7 @@ type Domain struct {
 	PersonIdSystem  string
 	Departments     []string
 	WithdrawalUri   string
+	DocumentRef     *string
 }
 
 func (d Domain) String() string {
@@ -96,12 +97,20 @@ func (d *DomainCache) updateCache() bool {
 
 		// external properties
 		props := parseExternalProperty(s.Extension)
+		// departments is optional
 		if val, ok := props["departments"]; ok {
 			domain.Departments = strings.Split(val, ",")
 		}
+		// documentRef is optional
+		if val, ok := props["documentRef"]; ok {
+			domain.DocumentRef = &val
+		}
+
+		// checkPolicy is required
 		if val, ok := props["checkPolicy"]; ok {
 			domain.CheckPolicyCode = val
 		} else {
+			log.Error().Str("domain", domain.Name).Str("property", "checkPolicy").Msg("Failed to parse external property from gICS domain")
 			continue
 		}
 

@@ -14,15 +14,20 @@ Detailed policy status information is available, too, and can be used to give fe
 
 ## Domain configuration (gICS)
 
-For a domain to be used in consent evaluation, it must be configured via external properties.
-The `checkPolicy` property is the only mandatory one that needs to be set. It should be set to the name of the 
-policy that is used to determine if a consent should be considered _accepted_.  
+For a domain to be used in consent evaluation, it must be configured via **external properties**.
+
+### checkPolicy
+
+The `checkPolicy` property is the only mandatory one that needs to be set. It should be set to the name of the
+policy that is used to determine if a consent should be considered _accepted_.
 
 Example for the MII Broad consent:
 
 ```sh
 checkPolicy=MDAT_erheben
 ```
+
+### departments
 
 Additionally, the `departments` property can be set to filter domains and only include them if explicitly requested. 
 The property value can be a single value or a list of comma seperated strings.
@@ -40,8 +45,20 @@ Data from those domains are part of the response if at least one of its values m
 }
 ```
 
-The body is optional in the request, though. In case it's missing only domains without the `departments` property set
+The body is optional in the request, though. In case it's missing, only domains without the `departments` property set
 are considered.
+
+### documentRef
+
+The `documentRef` property can be used to reference an _external_ document which is related to the consent of the domain 
+and should be returned as part of the consent status (i.e. `document-ref` response property).
+
+This property is optional.
+
+```sh
+documentRef=broad-consent-doc
+```
+
 
 ### Caching
 
@@ -88,14 +105,15 @@ _Response JSON interface definitions below._
 
 _See `Policy` response below._
 
-| property     | description                       | type                                                                 |
-|--------------|-----------------------------------|----------------------------------------------------------------------|
-| domain       | domain name                       | `string`                                                             |
-| description  | domain description                | `string`                                                             |
-| status       | consent status (of `checkPolicy`) | `string` ("accepted", "declined", "expired","withdrawn","not-asked") |
-| last-updated | date of last update               | `string` (ISO 8601 date)                                             |
-| ask-consent  | patient can be asked for consent  | `boolean`                                                            |
-| policies     | domain name                       | Array of `Policy`                                                    |
+| property      | description                       | type                                                                 |
+|---------------|-----------------------------------|----------------------------------------------------------------------|
+| domain        | domain name                       | `string`                                                             |
+| description   | domain description                | `string`                                                             |
+| document-ref  | external consent document id      | `string`                                                             |
+| status        | consent status (of `checkPolicy`) | `string` ("accepted", "declined", "expired","withdrawn","not-asked") |
+| last-updated  | date of last update               | `string` (ISO 8601 date)                                             |
+| ask-consent   | patient can be asked for consent  | `boolean`                                                            |
+| policies      | domain name                       | Array of `Policy`                                                    |
 
 ⚠️ **NOTE**: `ask-consent` _can_ evaluate to `true`, in case a valid consent exists that expires in less than a year.
 
@@ -126,6 +144,7 @@ _See `Policy` response below._
 >    {
 >      "domain": "MII",
 >      "description": "Broad Consent",
+>      "document-id": "bc-id",
 >      "status": "declined",
 >      "last-updated": "2023-09-21T14:13:25.999+02:00",
 >      "ask-consent": false,
@@ -147,9 +166,9 @@ _See `Policy` response below._
 >    {
 >      "domain": "Test",
 >      "description": "Test consent",
+>      "document-id": "test-id",
 >      "status": "not-asked",
 >      "last-updated": null,
->      "expires": null,
 >      "ask-consent": true,
 >      "policies": []
 >    }
