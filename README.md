@@ -144,7 +144,7 @@ _See `Policy` response below._
 >    {
 >      "domain": "MII",
 >      "description": "Broad Consent",
->      "document-id": "bc-id",
+>      "document-ref": "bc-id",
 >      "status": "declined",
 >      "last-updated": "2023-09-21T14:13:25.999+02:00",
 >      "ask-consent": false,
@@ -166,7 +166,7 @@ _See `Policy` response below._
 >    {
 >      "domain": "Test",
 >      "description": "Test consent",
->      "document-id": "test-id",
+>      "document-ref": "test-id",
 >      "status": "not-asked",
 >      "last-updated": null,
 >      "ask-consent": true,
