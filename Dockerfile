@@ -7,7 +7,7 @@ RUN go mod download
 COPY . .
 RUN go get -d -v && GOOS=linux GOARCH=amd64 go build -v
 
-FROM alpine:3.19 as run
+FROM alpine:3.20 as run
 
 RUN apk add --no-cache tzdata
 ENV TZ=Europe/Berlin
