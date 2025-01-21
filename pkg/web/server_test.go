@@ -269,7 +269,7 @@ func testRoute(t *testing.T, s *Server, data HandlerTestCase) {
 	if data.response != "" {
 		// assert body
 		ja := jsonassert.New(t)
-		ja.Assertf(response, data.response)
+		ja.Assert(response, data.response)
 	}
 }
 
