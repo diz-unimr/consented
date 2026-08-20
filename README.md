@@ -1,5 +1,5 @@
 # consented
-![go](https://github.com/diz-unimr/consented/actions/workflows/build.yml/badge.svg) ![docker](https://github.com/diz-unimr/consent-to-fhir/actions/workflows/release.yml/badge.svg) [![codecov](https://codecov.io/github/diz-unimr/consented/branch/main/graph/badge.svg?token=4ciJIXKAK5)](https://codecov.io/github/diz-unimr/consented)
+![go](https://github.com/diz-unimr/consented/actions/workflows/build.yml/badge.svg) ![docker](https://github.com/diz-unimr/consented/actions/workflows/release.yml/badge.svg) [![codecov](https://codecov.io/github/diz-unimr/consented/branch/main/graph/badge.svg?token=4ciJIXKAK5)](https://codecov.io/github/diz-unimr/consented)
 > REST service to query consent status information via gICS
 
 This service provides a single endpoint to query consent status information for a patient across all configured gICS domains.
