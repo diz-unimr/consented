@@ -1,11 +1,16 @@
 name: build & test
 
-on:
+"on":
   push:
+    branches:
+      - main
+    tags:
+      - "**"
   pull_request:
 
-jobs:
+permissions: read-all
 
+jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
