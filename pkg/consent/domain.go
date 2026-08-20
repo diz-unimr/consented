@@ -2,10 +2,11 @@ package consent
 
 import (
 	"fmt"
-	"github.com/rs/zerolog/log"
-	"github.com/samply/golang-fhir-models/fhir-models/fhir"
 	"strings"
 	"time"
+
+	"github.com/rs/zerolog/log"
+	"github.com/samply/golang-fhir-models/fhir-models/fhir"
 )
 
 const (
@@ -158,9 +159,10 @@ func parseProperty(e fhir.Extension) (*string, *string) {
 
 	var key, value *string
 	for _, ee := range e.Extension {
-		if ee.Url == "key" {
+		switch ee.Url {
+		case "key":
 			key = ee.ValueString
-		} else if ee.Url == "value" {
+		case "value":
 			value = ee.ValueString
 		}
 	}
